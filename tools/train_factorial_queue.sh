@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
 GPU="${GPU:-2}"
-MODEL_TYPES="${MODEL_TYPES:-range oa_range range_hyp}"
+MODEL_TYPES="${MODEL_TYPES:-vis m1_hyp m2_visibility m3_hybrid m1_m2 m1_m3 m2_m3 full}"
 DATAPATH="${DATAPATH:-/home/disk_10T/lzh_data/dtu_training/mvs_training/dtu}"
 TRAINLIST="${TRAINLIST:-lists/dtu/train.txt}"
 VALLIST="${VALLIST:-lists/dtu/val.txt}"

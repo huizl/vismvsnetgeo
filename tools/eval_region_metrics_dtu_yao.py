@@ -2,8 +2,8 @@
 
 The evaluator runs a checkpoint on the same ``dtu_yao`` pipeline used during
 training. It writes one row per image/region plus pixel-weighted and image-mean
-summaries. Both original Vis and OA checkpoints share the same inference
-parameters and can be loaded by this script.
+summaries. Baseline and configurable M1/M2/M3 checkpoints can all be loaded by
+this script.
 """
 
 import argparse
@@ -36,7 +36,7 @@ from models.model_variants import (  # noqa: E402
 def parse_args():
     parser = argparse.ArgumentParser(
         description=(
-            "Per-image and aggregate DTU metrics for the A/B/C ablation."
+            "Per-image and aggregate DTU metrics for the M1/M2/M3 ablation."
         )
     )
     parser.add_argument(
@@ -60,10 +60,12 @@ def parse_args():
     parser.add_argument("--stage2_iscale", type=int, default=2)
     parser.add_argument("--stage3_dnum", type=int, default=16)
     parser.add_argument("--stage3_iscale", type=int, default=1)
-    parser.add_argument("--range_sigma_scale", type=float, default=2.0)
-    parser.add_argument("--range_min_scale", type=float, default=1.0)
-    parser.add_argument("--range_max_scale", type=float, default=2.0)
     parser.add_argument("--hypothesis_residual_scale", type=float, default=1.0)
+    parser.add_argument("--visibility_fusion_beta", type=float, default=0.2)
+    parser.add_argument("--hybrid_stage2_wide_num", type=int, default=8)
+    parser.add_argument("--hybrid_stage3_wide_num", type=int, default=4)
+    parser.add_argument("--hybrid_sigma_scale", type=float, default=2.0)
+    parser.add_argument("--hybrid_max_scale", type=float, default=2.0)
     parser.add_argument("--eval_nviews", type=int, default=5,
                         help="Total model views, including the reference view.")
     parser.add_argument("--region_nviews", type=int, default=5,
@@ -101,16 +103,23 @@ def build_model(args):
         stage2_interval_scale=args.stage2_iscale,
         stage3_depth_num=args.stage3_dnum,
         stage3_interval_scale=args.stage3_iscale,
-        adaptive_range=variant.adaptive_range,
-        range_sigma_scale=args.range_sigma_scale,
-        range_min_scale=args.range_min_scale,
-        range_max_scale=args.range_max_scale,
         hypothesis_fusion=variant.hypothesis_fusion,
         hypothesis_residual_scales=(
             args.hypothesis_residual_scale,
             args.hypothesis_residual_scale,
             args.hypothesis_residual_scale,
         ),
+        visibility_fusion=variant.visibility_modeling,
+        visibility_fusion_betas=(
+            args.visibility_fusion_beta,
+            args.visibility_fusion_beta,
+            args.visibility_fusion_beta,
+        ),
+        hybrid_sampling=variant.hybrid_sampling,
+        hybrid_stage2_wide_num=args.hybrid_stage2_wide_num,
+        hybrid_stage3_wide_num=args.hybrid_stage3_wide_num,
+        hybrid_sigma_scale=args.hybrid_sigma_scale,
+        hybrid_max_scale=args.hybrid_max_scale,
     )
 
 
@@ -418,14 +427,18 @@ def main():
         raise ValueError("--large_disp_pct must be in (0,100)")
     if args.occ_abs_tol < 0.0 or args.occ_rel_tol < 0.0:
         raise ValueError("occlusion tolerances must be non-negative")
-    if args.range_sigma_scale < 0.0:
-        raise ValueError("--range_sigma_scale must be non-negative")
-    if args.range_min_scale <= 0.0 or args.range_max_scale < args.range_min_scale:
-        raise ValueError("range scales require 0 < min <= max")
     if args.hypothesis_residual_scale < 0.0:
         raise ValueError("--hypothesis_residual_scale must be non-negative")
+    if not 0.0 <= args.visibility_fusion_beta <= 1.0:
+        raise ValueError("--visibility_fusion_beta must be in [0,1]")
+    if args.hybrid_sigma_scale < 0.0:
+        raise ValueError("--hybrid_sigma_scale must be non-negative")
+    if args.hybrid_max_scale < 1.0:
+        raise ValueError("--hybrid_max_scale must be at least 1")
     if variant.hypothesis_fusion and args.vismode != "soft":
-        raise ValueError("factor C currently requires --vismode soft")
+        raise ValueError("M1 currently requires --vismode soft")
+    if variant.visibility_modeling and args.vismode != "soft":
+        raise ValueError("M2 currently requires --vismode soft")
     if args.light != -1 and not 0 <= args.light <= 6:
         raise ValueError("--light must be -1 or in [0,6]")
 
@@ -454,10 +467,9 @@ def main():
     output_dir = os.path.abspath(args.outdir)
     variant_metadata = {
         "ablation_code": variant.code,
-        "factor_a_occlusion_supervision": int(
-            variant.occlusion_supervision),
-        "factor_b_adaptive_range": int(variant.adaptive_range),
-        "factor_c_hypothesis_fusion": int(variant.hypothesis_fusion),
+        "factor_m1_hypothesis_fusion": int(variant.hypothesis_fusion),
+        "factor_m2_visibility_modeling": int(variant.visibility_modeling),
+        "factor_m3_hybrid_sampling": int(variant.hybrid_sampling),
     }
 
     per_image_rows = []
@@ -470,7 +482,7 @@ def main():
     print("Evaluating {} ({}): samples={}, eval_views={}, region_views={}, light={}".format(
         label, args.model_type, len(dataset), args.eval_nviews, args.region_nviews,
         "all" if args.light == -1 else args.light))
-    print("A/B/C factors: {}".format(variant.code))
+    print("M1/M2/M3 factors: {}".format(variant.code))
 
     with torch.no_grad():
         for batch_index, sample in enumerate(loader):
@@ -546,10 +558,12 @@ def main():
                         "testlist": testlist_path,
                         "eval_nviews": args.eval_nviews,
                         "region_nviews": args.region_nviews,
-                        "range_sigma_scale": args.range_sigma_scale,
-                        "range_min_scale": args.range_min_scale,
-                        "range_max_scale": args.range_max_scale,
                         "hypothesis_residual_scale": args.hypothesis_residual_scale,
+                        "visibility_fusion_beta": args.visibility_fusion_beta,
+                        "hybrid_stage2_wide_num": args.hybrid_stage2_wide_num,
+                        "hybrid_stage3_wide_num": args.hybrid_stage3_wide_num,
+                        "hybrid_sigma_scale": args.hybrid_sigma_scale,
+                        "hybrid_max_scale": args.hybrid_max_scale,
                         "scan": scan,
                         "view": int(ref_view),
                         "light": int(light),
@@ -579,19 +593,22 @@ def main():
             "testlist": testlist_path,
             "eval_nviews": args.eval_nviews,
             "region_nviews": args.region_nviews,
-            "range_sigma_scale": args.range_sigma_scale,
-            "range_min_scale": args.range_min_scale,
-            "range_max_scale": args.range_max_scale,
             "hypothesis_residual_scale": args.hypothesis_residual_scale,
+            "visibility_fusion_beta": args.visibility_fusion_beta,
+            "hybrid_stage2_wide_num": args.hybrid_stage2_wide_num,
+            "hybrid_stage3_wide_num": args.hybrid_stage3_wide_num,
+            "hybrid_sigma_scale": args.hybrid_sigma_scale,
+            "hybrid_max_scale": args.hybrid_max_scale,
             "light": "all" if args.light == -1 else args.light,
         })
 
     common_fields = [
         "label", "model_type", "ablation_code",
-        "factor_a_occlusion_supervision", "factor_b_adaptive_range",
-        "factor_c_hypothesis_fusion", "checkpoint", "testlist",
-        "eval_nviews", "region_nviews", "range_sigma_scale",
-        "range_min_scale", "range_max_scale", "hypothesis_residual_scale",
+        "factor_m1_hypothesis_fusion", "factor_m2_visibility_modeling",
+        "factor_m3_hybrid_sampling", "checkpoint", "testlist",
+        "eval_nviews", "region_nviews", "hypothesis_residual_scale",
+        "visibility_fusion_beta", "hybrid_stage2_wide_num",
+        "hybrid_stage3_wide_num", "hybrid_sigma_scale", "hybrid_max_scale",
     ]
     per_image_fields = common_fields + [
         "scan", "view", "light", "region", "pixels", *METRIC_NAMES,

@@ -6,13 +6,16 @@ from models.vismvsnet_oa import VisMVSModel
 
 
 class FullMethodForwardTest(unittest.TestCase):
-    def test_adaptive_range_and_hypothesis_fusion_forward(self):
+    def test_all_three_modules_forward(self):
         model = VisMVSModel(
             stage1_depth_num=8,
             stage2_depth_num=8,
             stage3_depth_num=8,
-            adaptive_range=True,
             hypothesis_fusion=True,
+            visibility_fusion=True,
+            hybrid_sampling=True,
+            hybrid_stage2_wide_num=4,
+            hybrid_stage3_wide_num=4,
         ).eval()
         images = torch.randn(1, 2, 3, 64, 64)
         projections = torch.eye(4).view(1, 1, 4, 4).repeat(1, 2, 1, 1)

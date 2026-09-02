@@ -9,7 +9,7 @@ from models.vismvsnet_oa import VisMVSLoss
 
 
 class OcclusionAwareLossTest(unittest.TestCase):
-    def test_factor_a_off_matches_original_loss(self):
+    def test_m1_and_m2_off_matches_original_loss(self):
         torch.manual_seed(7)
         baseline_outputs = []
         configurable_outputs = []
@@ -32,7 +32,7 @@ class OcclusionAwareLossTest(unittest.TestCase):
         original_loss, _ = BaselineLoss(occ_guide=False)(
             baseline_outputs, depth_gt, mask, interval)
         configurable_loss, stats = VisMVSLoss(
-            occlusion_aware_supervision=False,
+            visibility_supervision=False,
             hypothesis_visibility_weight=0.0,
         )(configurable_outputs, depth_gt, mask, interval)
 
@@ -47,33 +47,52 @@ class OcclusionAwareLossTest(unittest.TestCase):
         for name in baseline:
             self.assertEqual(baseline[name].shape, method[name].shape)
 
-    def test_adaptive_range_expands_for_uncertain_pixels(self):
+    def test_m2_starts_from_a_neutral_visibility_gate(self):
         model = OcclusionAwareModel(
-            adaptive_range=True,
-            range_sigma_scale=2.0,
-            range_min_scale=1.0,
-            range_max_scale=2.0,
+            visibility_fusion=True,
+            visibility_fusion_betas=(0.2, 0.2, 0.2),
+        )
+        for stage in (model.stage1, model.stage2, model.stage3):
+            self.assertEqual(
+                float(stage.uncert_net.occ_head.weight.abs().sum()), 0.0)
+            self.assertAlmostEqual(stage.visibility_fusion_beta, 0.2)
+
+    def test_hybrid_sampling_preserves_local_density_and_expands_tails(self):
+        model = OcclusionAwareModel(
+            stage2_depth_num=8,
+            hybrid_sampling=True,
+            hybrid_stage2_wide_num=4,
+            hybrid_sigma_scale=2.0,
+            hybrid_max_scale=2.0,
         )
         center = torch.tensor([[[10.0, 10.0]]])
         standard_deviation = torch.tensor([[[0.25, 10.0]]])
-        hypotheses = model._build_adaptive_depth_range(
+        hypotheses = model._build_hybrid_depth_range(
             center,
             standard_deviation,
-            depth_num=4,
+            depth_num=8,
+            wide_num=4,
             interval=torch.ones(1, 1),
             global_min=torch.zeros(1, 1),
-            global_max=torch.full((1, 1), 20.0),
+            global_max=torch.full((1, 1), 30.0),
         )
         width = hypotheses[:, -1] - hypotheses[:, 0]
-        self.assertAlmostEqual(float(width[0, 0, 0]), 4.0)
-        self.assertAlmostEqual(float(width[0, 0, 1]), 8.0)
+        baseline = model._build_per_pixel_depth_range(
+            center, 8, torch.ones(1, 1), 1, 1, 2,
+            center.device, center.dtype)
+        self.assertTrue(torch.allclose(
+            hypotheses[0, :, 0, 0], baseline[0, :, 0, 0]))
+        self.assertTrue(torch.allclose(
+            hypotheses[0, 2:6, 0, 1], baseline[0, 2:6, 0, 1]))
+        self.assertGreater(float(width[0, 0, 1]), float(width[0, 0, 0]))
         self.assertTrue(torch.all(hypotheses[:, 1:] >= hypotheses[:, :-1]))
 
     def test_full_model_adds_only_zero_initialized_weight_heads(self):
         base = OcclusionAwareModel()
         full = OcclusionAwareModel(
-            adaptive_range=True,
             hypothesis_fusion=True,
+            visibility_fusion=True,
+            hybrid_sampling=True,
         )
         incompatible = full.load_state_dict(base.state_dict(), strict=False)
         self.assertFalse(incompatible.unexpected_keys)
@@ -92,7 +111,7 @@ class OcclusionAwareLossTest(unittest.TestCase):
                 0.0,
             )
 
-    def test_occluded_pair_pixels_do_not_update_pair_depth(self):
+    def test_m2_supervises_visibility_without_masking_pair_depth(self):
         batch, height, width, depth_num = 1, 4, 4, 16
         stage_outputs = []
         pair_depths = []
@@ -127,7 +146,10 @@ class OcclusionAwareLossTest(unittest.TestCase):
         visibility_masks = torch.ones_like(visibility_depths)
         projections = torch.eye(4).view(1, 1, 4, 4).repeat(batch, 2, 1, 1)
 
-        loss_fn = VisMVSLoss(visibility_weight=0.2)
+        loss_fn = VisMVSLoss(
+            visibility_supervision=True,
+            visibility_weight=0.2,
+        )
         loss, stats = loss_fn(
             stage_outputs,
             depth_gt,
@@ -143,7 +165,9 @@ class OcclusionAwareLossTest(unittest.TestCase):
         visible_gradient = pair_depths[0].grad[:, :, :2].abs().sum()
         occluded_gradient = pair_depths[0].grad[:, :, 2:].abs().sum()
         self.assertGreater(float(visible_gradient), 0.0)
-        self.assertEqual(float(occluded_gradient), 0.0)
+        self.assertGreater(float(occluded_gradient), 0.0)
+        self.assertGreater(
+            float(stage_outputs[0][1][0][2].grad.abs().sum()), 0.0)
         self.assertAlmostEqual(float(stats["pair_visible_ratio_stage1"]), 0.5)
         self.assertAlmostEqual(float(stats["pair_occluded_ratio_stage1"]), 0.5)
         self.assertAlmostEqual(float(stats["range_coverage_stage2"]), 1.0)
@@ -185,7 +209,7 @@ class OcclusionAwareLossTest(unittest.TestCase):
         projections = torch.eye(4).view(1, 1, 4, 4).repeat(batch, 2, 1, 1)
 
         loss_fn = VisMVSLoss(
-            occlusion_aware_supervision=False,
+            visibility_supervision=False,
             hypothesis_visibility_weight=0.1,
         )
         loss, stats = loss_fn(

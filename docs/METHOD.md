@@ -1,288 +1,283 @@
-# 方法、完整消融与下一步
+# 面向大视差与遮挡的 Vis-MVSNet 改进方案
 
 ## 1. 研究目标
 
-目标是在不更换 Vis-MVSNet 主干的前提下，改善大视差、遮挡和遮挡边界区域的深度估计。当前方法针对三个可定位的内部问题：
+目标是在不替换 Vis-MVSNet 主干的前提下，提高以下区域的深度估计质量：
 
-1. 原始 pair-depth 监督没有区分“该参考点在某个源视图中可见还是被遮挡”；
-2. 级联 Stage 2/3 的固定窄范围可能把粗阶段错误永久锁在搜索区间之外；
-3. 原始源视图可靠性 `exp(-uncertainty)` 对所有深度假设共享，不能表达“同一源图在不同候选深度上的匹配可靠性不同”。
+- 大视差区域；
+- 任一源视图遮挡区域；
+- 多数源视图遮挡区域；
+- 大视差与遮挡交集；
+- 深度边界与遮挡交集。
 
-因此定义三个独立因素：
+方法沿 Vis-MVSNet 的三个关键环节展开：源视图融合、逐源可见性建模和级联深度假设生成。三个模块可以独立启用，因此能够形成完整的八组消融。
 
-- A：source-specific occlusion-aware supervision；
-- B：uncertainty-adaptive cascade range；
-- C：depth-hypothesis-aware source fusion。
+## 2. 基线
 
-## 2. 完整三因素设计
-
-三个二值因素必须形成 (2^3=8) 组，而不是只做逐步叠加：
-
-| `MODEL_TYPE` | code | A | B | C |
-| --- | --- | ---: | ---: | ---: |
-| `vis` | 000 | 0 | 0 | 0 |
-| `oa` | 100 | 1 | 0 | 0 |
-| `range` | 010 | 0 | 1 | 0 |
-| `hyp` | 001 | 0 | 0 | 1 |
-| `oa_range` | 110 | 1 | 1 | 0 |
-| `oa_hyp` | 101 | 1 | 0 | 1 |
-| `range_hyp` | 011 | 0 | 1 | 1 |
-| `oa_full` | 111 | 1 | 1 | 1 |
-
-配置只在 [model_variants.py](../models/model_variants.py) 中定义一次，训练与评测共用，避免两个入口对同一名称采用不同开关。
-
-## 3. A：逐源遮挡监督
-
-### 3.1 真实逐源标签
-
-对参考像素 (x) 及源视图 (i)，使用参考 GT 深度恢复三维点，再投影至源视图。记投影深度为 (z_{rightarrow i})，采样到的源 GT 表面深度为 (z_i)，容差为：
+对参考视图和第 s 个源视图，Vis-MVSNet 得到成对代价体特征、成对深度和不确定性 u_s。原始 soft 融合权重为：
 
 ```text
-tau = max(occ_abs_tol, occ_rel_tol * z_i)
+w_s = exp(-u_s)
 ```
 
-标签定义为：
+该权重对一个源视图的全部深度假设相同；原模型虽然包含 `occ_head`，但默认损失没有正确的逐源遮挡标签，也没有在融合中使用该输出。
+
+## 3. M1：深度假设感知源视图融合
+
+M1 对每个源视图 s 和每个深度假设 d 预测残差 r_(s,d)。输入包含：
 
 ```text
-visible:  abs(z_ref_to_src - z_src) <= tau
-occluded: z_ref_to_src - z_src > tau
+8-channel pair cost features
+pair matching score
+pair probability
+normalized depth coordinate
 ```
 
-投影出界、参考/源 GT 无效、投影点位于源表面明显前方的像素不参加该 pair 的可见性监督。这样每个参考像素对不同源图可以得到不同标签。
-
-### 3.2 修正后的 pair 损失
-
-原始 fused depth 监督不变：
+网络使用轻量 3D 卷积并输出一个假设级 logit：
 
 ```text
-L_fused = mean_valid(abs(d_fused - d_gt) / depth_interval)
+r_(s,d) = lambda_h * tanh(H(F_(s,d)))
 ```
 
-A 打开时，pair-depth L1 只在当前 source 可见处计算：
+融合权重变为：
 
 ```text
-L_pair_A = mean_visible(abs(d_pair - d_gt) / depth_interval)
+w_(s,d) = exp(-u_s + r_(s,d))
 ```
 
-uncertainty NLL 为：
+输出层零初始化，因此刚开始训练时 `r=0`，模型严格退化为原始不确定性融合。M1 还在最接近 GT 深度的假设平面监督该 logit，使其学习当前源视图对正确深度假设是否可见。
+
+代码位置：
 
 ```text
-L_uncert = error * exp(-u) + u
+models/vismvsnet_oa.py::HypothesisWeightNet
+models/vismvsnet_oa.py::SingleStage.forward
+models/vismvsnet_oa.py::VisMVSLoss._hypothesis_logit_at_gt
 ```
 
-可见像素的 `error` 同时更新 pair depth 与 uncertainty；遮挡像素的 `error.detach()` 只更新 uncertainty。原始 `occ_head` 使用 balanced focal BCE 学习真实逐源标签：
+## 4. M2：几何监督的源视图可见性建模
+
+### 4.1 逐源标签
+
+使用参考视图 GT 深度将参考像素反投影到三维，再投影到第 s 个源视图。设投影点在源相机坐标系中的深度为 z_proj，源视图 GT 深度为 z_src，则：
 
 ```text
-L_A = L_fused
-    + lambda_pair * L_pair_A
-    + lambda_uncert * L_uncert_A
-    + lambda_vis * L_occ
+tau = max(tau_abs, tau_rel * z_src)
+visible = |z_proj - z_src| <= tau
+occluded = z_proj > z_src + tau
 ```
 
-默认 `lambda_pair=1`、`lambda_uncert=1`、`lambda_vis=0.2`。
+只在投影有效、源深度有效且位于图像范围内的像素监督。标签是逐参考-源图像对的，不会把参考图有效掩码误当成所有源视图都可见。
 
-### 3.3 A 关闭时的严格行为
+### 4.2 可见性损失
 
-A=0 时：
-
-- pair L1 使用原始参考有效掩码；
-- uncertainty 使用原始、未 detach 的 pair error；
-- 原 `occ_head` 不计算可见性损失；
-- fused/pair/uncertainty 三项与原 `VisMVSLoss(occ_guide=False)` 数值一致。
-
-这使 `hyp` 和 `range_hyp` 可以读取 C 所需的逐源标签，却不会隐式获得 A。
-
-## 4. B：不确定性感知的级联范围
-
-Stage 1 继续使用全局统一深度范围。每个阶段从融合概率体 (P_s(d,x)) 得到深度和标准差：
+原 `occ_head` 输出可见性 logit o_s：
 
 ```text
-mu_s(x) = sum_d P_s(d,x) * d
-sigma_s(x) = sqrt(sum_d P_s(d,x) * (d - mu_s(x))^2)
+p_vis(s) = sigmoid(o_s)
 ```
 
-下一阶段的 baseline 半宽与自适应半宽为：
+使用类别平衡 Focal BCE：
 
 ```text
-fixed_half_s = D_next / 2 * interval_next
-adaptive_half_s(x) =
-    clamp(k * sigma_s(x),
-          min_scale * fixed_half_s,
-          max_scale * fixed_half_s)
+L_vis = FocalBCE(o_s, M_vis_s)
 ```
 
-随后在以下端点间均匀采样固定数量的深度假设：
+### 4.3 保守软门控
+
+可见性不进行硬筛除，而是形成有下界的软门控：
 
 ```text
-lower(x) = clamp(mu_s(x) - adaptive_half_s(x), global_min, global_max)
-upper(x) = clamp(mu_s(x) + adaptive_half_s(x), global_min, global_max)
+g_s = (1 - beta) + beta * p_vis(s)
+```
+
+默认 `beta=0.2`，所以 `g_s` 位于 `[0.8, 1.0]`。即使可见性预测错误，也不会完全删除一个源视图。零可见性 logit 对所有源视图产生相同门控，归一化后与原始融合完全一致。
+
+M2 不改变原始 pair-depth 和 uncertainty 损失：
+
+- 遮挡像素仍然具有 pair-depth 梯度；
+- 不对遮挡区域执行 detach；
+- 不使用 hard mask。
+
+代码位置：
+
+```text
+datasets/dtu_yao.py
+models/dynamic_visibility.py::ground_truth_pair_visibility
+models/vismvsnet_oa.py::UncertNet
+models/vismvsnet_oa.py::SingleStage.forward
+models/vismvsnet_oa.py::VisMVSLoss
+```
+
+## 5. M3：覆盖保持的局部-扩展混合采样
+
+### 5.1 目标
+
+Stage 2/3 需要同时满足：
+
+- 中央区域保持较小的深度采样间隔；
+- 前一阶段误差较大时有少量假设覆盖更远深度；
+- 总深度假设数量和显存开销保持不变。
+
+### 5.2 假设划分
+
+设阶段总假设数为 D，尾部扩展假设数为 K：
+
+```text
+D = D_local + K_wide
 ```
 
 默认：
 
 ```text
-k = 2.0
-min_scale = 1.0
-max_scale = 2.0
+Stage 2: D=32, D_local=24, K_wide=8
+Stage 3: D=16, D_local=12, K_wide=4
 ```
 
-因此第一版保持与 baseline 相同的最小范围，只允许高不确定像素最多扩大至两倍。深度假设数量不变，所以范围扩大不会增加 3D volume 的深度维度，但会降低该像素的深度采样分辨率。这是必须通过覆盖率与误差共同验证的代价。
+中央 `D_local` 个假设始终使用原始间隔 delta。其余假设平均分配到左右尾部。
 
-B 不增加可学习参数，也不使用 source visibility GT。
+### 5.3 不确定性控制尾部跨度
 
-## 5. C：深度假设相关源视图融合
-
-### 5.1 原始融合的限制
-
-原始 soft fusion 对 source (i) 使用二维 uncertainty：
+设上一阶段预测标准差为 sigma_d，原始半范围为 h_base：
 
 ```text
-w_i(x) = exp(-u_i(x))
+s = clip(gamma * sigma_d / h_base, 1, s_max)
 ```
 
-这个权重在整个深度轴共享。大视差与遮挡处，同一源视图可能只在部分深度假设上产生可靠匹配，因此共享权重表达能力不足。
+只把最外侧尾部位置乘以 s，并在外端点与中央相邻位置之间线性布置尾部假设。最后裁剪到 DTU 全局深度上下界。
 
-### 5.2 三维 residual weight
+当 `s=1` 且未触及全局边界时，拼接后的全部假设与原始均匀采样逐项相同；当 `s>1` 时，中央局部假设完全不变，只有尾部向外扩展。
 
-C 使用轻量 3D head (H)，输入：
+因此 M3 不是把固定数量的假设均匀摊到更宽区间，而是在保持局部分辨率的同时补充搜索覆盖。
 
-- 8 通道 pair-wise regularized volume feature；
-- 匹配 score；
-- 当前 pair probability；
-- 归一化 depth coordinate。
-
-输出受限残差：
+代码位置：
 
 ```text
-r_i(x,d) = residual_scale * tanh(H_i(x,d))
-log w_i(x,d) = -u_i(x) + r_i(x,d)
+models/vismvsnet_oa.py::_build_hybrid_depth_range
+models/vismvsnet_oa.py::VisMVSModel.forward
 ```
 
-融合为：
+## 6. 三模块联合公式
+
+完整模型的源视图-深度假设融合权重为：
 
 ```text
-F(x,d) =
-    sum_i exp(log w_i(x,d)) * F_i(x,d)
-    / sum_i exp(log w_i(x,d))
+log w_(s,d) = -u_s + r_(s,d) + log(g_s)
+w_(s,d) = exp(log w_(s,d))
 ```
 
-最后一层权重与 bias 均零初始化。初始时 (r_i=0)，所以接入 C 后不会在第一步随机破坏原融合。
-
-### 5.3 C 自己的监督
-
-在每个像素找到距离 GT 最近的深度假设 (d^*)，取对应 residual logit：
+随后对所有源视图进行归一化：
 
 ```text
-d_star = argmin_d abs(D(d,x) - d_gt(x))
-L_C = BalancedFocalBCE(H(x,d_star), M_vis)
+F_fused(d) = sum_s(w_(s,d) * F_(s,d)) / sum_s(w_(s,d))
 ```
 
-默认 `lambda_C=0.1`。C 使用真实逐源可见性是为了训练自己的融合权重，并不改变 A=0 时的 baseline pair-depth 与 uncertainty 损失。
+三项职责不同：
 
-C 当前只在 `vismode=soft` 下启用。
+- M1 判断某个源视图对具体深度假设的支持程度；
+- M2 判断该像素在该源视图中的可见程度；
+- M3 决定后续阶段在哪些深度位置建立假设。
 
-## 6. 总损失
+## 7. 总损失
 
-三个阶段权重保持 Vis-MVSNet 的 `0.5, 1.0, 2.0`。统一形式为：
+每个阶段保留原始融合深度、pair depth 和 uncertainty 项，并按启用模块加入辅助监督：
 
 ```text
 L_stage = L_fused
-        + L_pair(A on/off)
-        + L_uncert(A on/off)
-        + I[A] * lambda_A * L_occ
-        + I[C] * lambda_C * L_hyp_visibility
-
-L_total = 0.5 * L_stage1 + 1.0 * L_stage2 + 2.0 * L_stage3
+        + lambda_pair * L_pair
+        + lambda_uncert * L_uncert
+        + lambda_vis * L_vis
+        + lambda_hyp * L_hyp_vis
 ```
 
-B 只改变实际深度假设，不额外添加损失。
+其中：
 
-## 7. 参数与 checkpoint 兼容性
+- `L_vis` 只在 M2 启用；
+- `L_hyp_vis` 只在 M1 启用；
+- M3 不增加损失和可学习参数；
+- 三级损失权重仍为 `(0.5, 1.0, 2.0)`。
 
-- A 只改变监督，不增加参数；
-- B 只改变深度范围，不增加参数；
-- C 在三个阶段增加 hypothesis heads；
-- `vis/oa/range/oa_range` 的参数键和形状一致；
-- `hyp/oa_hyp/range_hyp/oa_full` 的参数键和形状一致；
-- C 模型可加载无 C checkpoint，缺失的 head 参数保持零初始化；
-- C checkpoint 不能用无 C 结构严格加载；
-- B 虽没有参数，推理时仍必须启用正确开关。
+## 8. 正式八组
 
-主消融应全部从头训练。旧 checkpoint 初始化仅用于快速检查或额外 fine-tuning 实验。
+| `MODEL_TYPE` | code | M1 | M2 | M3 |
+|---|---:|---:|---:|---:|
+| `vis` | 000 | 0 | 0 | 0 |
+| `m1_hyp` | 100 | 1 | 0 | 0 |
+| `m2_visibility` | 010 | 0 | 1 | 0 |
+| `m3_hybrid` | 001 | 0 | 0 | 1 |
+| `m1_m2` | 110 | 1 | 1 | 0 |
+| `m1_m3` | 101 | 1 | 0 | 1 |
+| `m2_m3` | 011 | 0 | 1 | 1 |
+| `full` | 111 | 1 | 1 | 1 |
 
-## 8. 评测区域与指标
+正式表只使用这八组，不混入其他模块定义。
 
-每个模型在相同 scan、view、light 和相同像素掩码上统计：
+## 9. 实验顺序
 
-- `full`；
-- `boundary`；
-- `large_disparity`；
-- `occluded_any`；
-- `occluded_majority`；
-- `large_disp_and_occluded`；
-- `boundary_and_occluded`。
+建议按以下顺序进行：
 
-深度指标：
+1. 先训练 `m2_visibility` 和 `m3_hybrid`，确认两个新单模块有效。
+2. 保留已有 `vis`；已有 `hyp` checkpoint 可作为 `m1_hyp` 评测。
+3. 单模块通过后训练 `m1_m2`、`m1_m3`、`m2_m3`。
+4. 最后训练 `full`，避免在单模块无效时浪费组合训练时间。
+5. Val 用于选 checkpoint 和参数，Test 只用于最终报告。
+6. 三视图训练和五视图训练都使用五视图推理，分析稀疏训练与正常训练条件。
 
-- Abs Error，越低越好；
-- Acc2、Acc4、Acc8，越高越好。
+单模块进入正式论文的最低判断标准：
 
-范围诊断：
+```text
+large_disparity Abs 下降
+occluded_any 或 occluded_majority Abs 下降
+large_disp_and_occluded Abs 下降
+Acc2 不明显退化
+full 区域无不可接受退化
+Val 与 Test 改善方向基本一致
+```
 
-- `stage1/2/3_in_range`：GT 是否位于该阶段实际搜索区间；
-- `stage1/2/3_range_width`：搜索宽度除以原始 base interval。
+## 10. 区域评测
 
-B 的有效性不能只看范围变宽。理想结果是目标区域的 Stage 2/3 coverage 提高，并同时带来 Abs/Acc 改善。
+评测脚本为：
 
-## 9. 如何读完整消融
+```text
+tools/eval_region_metrics_dtu_yao.py
+```
 
-单因素最直接比较：
+输出：
 
-- A：`oa - vis`；
-- B：`range - vis`；
-- C：`hyp - vis`。
+```text
+all_metrics.csv
+summary_metrics.csv
+```
 
-在不同上下文中还要看四组成对比较：
+每张图和汇总表都包含：
 
-- A：`oa vs vis`、`oa_range vs range`、`oa_hyp vs hyp`、`oa_full vs range_hyp`；
-- B：`range vs vis`、`oa_range vs oa`、`range_hyp vs hyp`、`oa_full vs oa_hyp`；
-- C：`hyp vs vis`、`oa_hyp vs oa`、`range_hyp vs range`、`oa_full vs oa_range`。
+```text
+full
+boundary
+large_disparity
+occluded_any
+occluded_majority
+large_disp_and_occluded
+boundary_and_occluded
+```
 
-如果某模块单独有效、组合后无效，说明存在交互作用，不能只凭 `oa_full` 一组否定该模块。论文表格应保留八组，重点报告目标区域与 full 的共同变化。
+除 `abs/acc2/acc4/acc8` 外，还记录 Stage 1/2/3 GT in-range 比例和 Stage 2/3 范围宽度，用于检查 M3 是否真正提高目标区域覆盖。
 
-## 10. 成功判据
+## 11. 当前实现状态
 
-A 的预期证据：
+已经实现：
 
-- `occluded_any/majority` 与交集区域 Abs 降低或 Acc 提高；
-- pair visible/occluded 比例合理；
-- occluded recall 不长期为 0；
-- full 区域不能出现明显系统性退化。
+- M1 假设级融合和 GT 深度平面的可见性监督；
+- M2 逐源几何标签、平衡 Focal BCE、保守软门控；
+- M3 局部密集与不确定性尾部扩展采样；
+- 八组统一模型配置；
+- 训练、队列训练、Val/Test 区域评测和 CSV 元数据；
+- 采样退化性质、损失梯度、checkpoint 参数结构和三模块联合前向测试。
 
-B 的预期证据：
+仍需服务器实验确认：
 
-- Stage 2/3 target-region coverage 提升；
-- width 增幅受控；
-- coverage 提升转化为深度指标改善，而不是只扩大范围。
-
-C 的预期证据：
-
-- hypothesis visible recall 与 occluded recall 都非退化解；
-- C 的四组成对比较中多数方向一致；
-- 对大视差与遮挡交集的收益高于 full 区域随机波动。
-
-主方法不必强行保留三个模块。如果八组结果显示某因素主效应持续为负，应删除该因素，把有效因素组合作为最终方法。
-
-## 11. 当前训练与后续步骤
-
-当前 `vis=000` 与 `oa=100` 已开始训练时，GPU 2、3 可运行剩余六组。命令见项目 [README.md](../README.md)。
-
-全部训练完成后：
-
-1. 检查每个 `logs.txt` 是否有 NaN、空监督或异常 recall；
-2. 每组只用 `val.txt` 选择 checkpoint，记录选择规则；
-3. 用完全相同的评测参数生成八组 `summary_metrics.csv`；
-4. 先分析 full 与七个目标区域的八组表，再分析 A/B/C 主效应与交互；
-5. 模型和超参数冻结后，再对 `test.txt` 运行最终报告；
-6. 从逐图 `all_metrics.csv` 中挑选改善显著且有代表性的 scan/view；
-7. 最后生成干净深度图、误差图、区域 mask 和局部放大，不再盲目遍历全部可视化。
+- M2 单模块是否稳定改善遮挡区域；
+- M3 单模块是否提高大视差区域 Stage 2/3 coverage 并降低 Abs；
+- M1+M2 是否消除旧式硬遮挡处理造成的组合冲突；
+- `beta`、尾部数量、`gamma` 和最大扩展比例的 Val 参数选择；
+- 最终三视图、五视图 Val/Test 消融与定向可视化。

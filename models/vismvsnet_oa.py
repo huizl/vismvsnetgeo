@@ -206,18 +206,28 @@ class SingleStage(nn.Module):
     """
 
     def __init__(self, hypothesis_fusion=False,
-                 hypothesis_residual_scale=1.0):
+                 hypothesis_residual_scale=1.0,
+                 visibility_fusion=False,
+                 visibility_fusion_beta=0.2):
         super(SingleStage, self).__init__()
         if hypothesis_residual_scale < 0.0:
             raise ValueError("hypothesis_residual_scale must be non-negative")
+        if not 0.0 <= visibility_fusion_beta <= 1.0:
+            raise ValueError("visibility_fusion_beta must be in [0, 1]")
         self.reg = RegNet3D(8)
         self.reg_pair = RegPair()
         self.reg_fuse = RegFuse()
         self.uncert_net = UncertNet()
         self.hypothesis_fusion = hypothesis_fusion
         self.hypothesis_residual_scale = hypothesis_residual_scale
+        self.visibility_fusion = visibility_fusion
+        self.visibility_fusion_beta = visibility_fusion_beta
         self.hypothesis_weight_net = (
             HypothesisWeightNet() if hypothesis_fusion else None)
+        if visibility_fusion:
+            # A zero logit produces one constant gate for all source views, so
+            # normalized fusion starts exactly from the original behavior.
+            nn.init.zeros_(self.uncert_net.occ_head.weight)
 
     @staticmethod
     def _normalized_depth_coordinate(depth_values, height, width):
@@ -284,6 +294,7 @@ class SingleStage(nn.Module):
 
             # ---- fuse intermediate features ----
             if mode == 'soft':
+                log_weight = -uncert.unsqueeze(2)
                 if self.hypothesis_fusion:
                     depth_coordinate = self._normalized_depth_coordinate(
                         depth_values, H, W).unsqueeze(1)
@@ -297,9 +308,16 @@ class SingleStage(nn.Module):
                         hypothesis_features)
                     residual = self.hypothesis_residual_scale * torch.tanh(
                         hypothesis_logit)
-                    weight = (-uncert.unsqueeze(2) + residual).exp()
-                else:
-                    weight = (-uncert).exp().unsqueeze(2)        # [B, 1, 1, H, W]
+                    log_weight = log_weight + residual
+                if self.visibility_fusion:
+                    visibility_probability = torch.sigmoid(occ).unsqueeze(2)
+                    visibility_gate = (
+                        (1.0 - self.visibility_fusion_beta) +
+                        self.visibility_fusion_beta * visibility_probability
+                    )
+                    log_weight = log_weight + torch.log(
+                        visibility_gate.clamp(min=1e-6))
+                weight = log_weight.exp()
                 weight_sum = weight_sum + weight
                 fused_interm = fused_interm + interm * weight
             elif mode == 'hard':
@@ -372,34 +390,53 @@ class VisMVSModel(nn.Module):
                  stage1_depth_num=48, stage1_interval_scale=4,
                  stage2_depth_num=32, stage2_interval_scale=2,
                  stage3_depth_num=16, stage3_interval_scale=1,
-                 adaptive_range=False, range_sigma_scale=2.0,
-                 range_min_scale=1.0, range_max_scale=2.0,
                  hypothesis_fusion=False,
-                 hypothesis_residual_scales=(1.0, 1.0, 1.0)):
+                 hypothesis_residual_scales=(1.0, 1.0, 1.0),
+                 visibility_fusion=False,
+                 visibility_fusion_betas=(0.2, 0.2, 0.2),
+                 hybrid_sampling=False,
+                 hybrid_stage2_wide_num=8,
+                 hybrid_stage3_wide_num=4,
+                 hybrid_sigma_scale=2.0,
+                 hybrid_max_scale=2.0):
         super(VisMVSModel, self).__init__()
-        if range_sigma_scale < 0.0:
-            raise ValueError("range_sigma_scale must be non-negative")
-        if range_min_scale <= 0.0 or range_max_scale < range_min_scale:
-            raise ValueError(
-                "range scales require 0 < range_min_scale <= range_max_scale")
         if len(hypothesis_residual_scales) != 3:
             raise ValueError("hypothesis_residual_scales must contain three values")
+        if len(visibility_fusion_betas) != 3:
+            raise ValueError("visibility_fusion_betas must contain three values")
+        if hybrid_sigma_scale < 0.0:
+            raise ValueError("hybrid_sigma_scale must be non-negative")
+        if hybrid_max_scale < 1.0:
+            raise ValueError("hybrid_max_scale must be at least 1")
+        if hybrid_sampling:
+            self._validate_hybrid_wide_num(
+                hybrid_stage2_wide_num, stage2_depth_num, "stage 2")
+            self._validate_hybrid_wide_num(
+                hybrid_stage3_wide_num, stage3_depth_num, "stage 3")
         self.feature = MultiScaleFeatureNet()
         self.stage1 = SingleStage(
             hypothesis_fusion=hypothesis_fusion,
-            hypothesis_residual_scale=hypothesis_residual_scales[0])
+            hypothesis_residual_scale=hypothesis_residual_scales[0],
+            visibility_fusion=visibility_fusion,
+            visibility_fusion_beta=visibility_fusion_betas[0])
         self.stage2 = SingleStage(
             hypothesis_fusion=hypothesis_fusion,
-            hypothesis_residual_scale=hypothesis_residual_scales[1])
+            hypothesis_residual_scale=hypothesis_residual_scales[1],
+            visibility_fusion=visibility_fusion,
+            visibility_fusion_beta=visibility_fusion_betas[1])
         self.stage3 = SingleStage(
             hypothesis_fusion=hypothesis_fusion,
-            hypothesis_residual_scale=hypothesis_residual_scales[2])
+            hypothesis_residual_scale=hypothesis_residual_scales[2],
+            visibility_fusion=visibility_fusion,
+            visibility_fusion_beta=visibility_fusion_betas[2])
         self.mode = mode
-        self.adaptive_range = adaptive_range
-        self.range_sigma_scale = range_sigma_scale
-        self.range_min_scale = range_min_scale
-        self.range_max_scale = range_max_scale
         self.hypothesis_fusion = hypothesis_fusion
+        self.visibility_fusion = visibility_fusion
+        self.hybrid_sampling = hybrid_sampling
+        self.hybrid_stage2_wide_num = hybrid_stage2_wide_num
+        self.hybrid_stage3_wide_num = hybrid_stage3_wide_num
+        self.hybrid_sigma_scale = hybrid_sigma_scale
+        self.hybrid_max_scale = hybrid_max_scale
 
         self.s1_dnum = stage1_depth_num
         self.s1_iscale = stage1_interval_scale
@@ -427,34 +464,84 @@ class VisMVSModel(nn.Module):
             depth_start = depth_start.unsqueeze(1)  # [B, 1, H, W]
         return depth_start + interval.view(B, 1, 1, 1) * d  # [B, D, H, W]
 
-    def _build_adaptive_depth_range(
-            self, pred_depth, pred_std, depth_num, interval,
+    @staticmethod
+    def _validate_hybrid_wide_num(wide_num, depth_num, stage_name):
+        if wide_num <= 0 or wide_num >= depth_num:
+            raise ValueError(
+                "{} hybrid wide hypotheses must satisfy 0 < wide_num < {}".format(
+                    stage_name, depth_num))
+        if wide_num % 2 != 0 or depth_num % 2 != 0:
+            raise ValueError(
+                "{} hybrid sampling requires even depth_num and wide_num".format(
+                    stage_name))
+        if depth_num - wide_num < 2:
+            raise ValueError(
+                "{} hybrid sampling requires at least two local hypotheses".format(
+                    stage_name))
+
+    def _build_hybrid_depth_range(
+            self, pred_depth, pred_std, depth_num, wide_num, interval,
             global_min, global_max):
-        """Build a conservative uncertainty-adaptive range [B,D,H,W]."""
+        """Keep local spacing fixed and expand only uncertain tail samples.
+
+        At expansion scale one, the output exactly reproduces the original
+        uniformly spaced cascade hypotheses. As uncertainty rises, only the
+        outer wide_num hypotheses move farther from the predicted center.
+        """
+        self._validate_hybrid_wide_num(wide_num, depth_num, "cascade")
         batch = pred_depth.shape[0]
         interval_map = interval.view(batch, 1, 1)
-        fixed_half_width = (depth_num // 2) * interval_map
-        uncertainty_half_width = self.range_sigma_scale * pred_std
-        half_width = torch.maximum(
-            uncertainty_half_width,
-            self.range_min_scale * fixed_half_width)
-        half_width = torch.minimum(
-            half_width,
-            self.range_max_scale * fixed_half_width)
 
-        range_min = torch.maximum(
-            pred_depth - half_width, global_min.view(batch, 1, 1))
-        range_max = torch.minimum(
-            pred_depth + half_width, global_max.view(batch, 1, 1))
-        range_max = torch.maximum(range_max, range_min + 1e-6)
+        local_num = depth_num - wide_num
+        left_wide_num = wide_num // 2
+        right_wide_num = wide_num - left_wide_num
+        local_left_num = local_num // 2
+        local_right_num = local_num - local_left_num - 1
+        base_left_num = depth_num // 2
+        base_right_num = depth_num - base_left_num - 1
 
-        position = torch.linspace(
-            0.0, 1.0, depth_num,
+        base_half_width = max(base_left_num, base_right_num, 1) * interval_map
+        uncertainty_width = self.hybrid_sigma_scale * pred_std
+        expansion_scale = (uncertainty_width / base_half_width.clamp(min=1e-6))
+        expansion_scale = expansion_scale.clamp(
+            min=1.0, max=self.hybrid_max_scale)
+
+        left_outer = -base_left_num * interval_map * expansion_scale
+        left_inner = -(local_left_num + 1) * interval_map
+        left_position = torch.linspace(
+            0.0, 1.0, left_wide_num,
             device=pred_depth.device, dtype=pred_depth.dtype,
-        ).view(1, depth_num, 1, 1)
-        return (
-            range_min.unsqueeze(1) +
-            (range_max - range_min).unsqueeze(1) * position)
+        ).view(1, left_wide_num, 1, 1)
+        offset_parts = [
+            left_outer.unsqueeze(1) +
+            (left_inner - left_outer).unsqueeze(1) * left_position
+        ]
+
+        local_index = torch.arange(
+            local_num, device=pred_depth.device, dtype=pred_depth.dtype,
+        ).view(1, local_num, 1, 1)
+        local_offsets = (
+            local_index - float(local_left_num)
+        ) * interval_map.unsqueeze(1)
+        local_offsets = local_offsets.expand(
+            -1, -1, pred_depth.shape[1], pred_depth.shape[2])
+        offset_parts.append(local_offsets)
+
+        right_inner = (local_right_num + 1) * interval_map
+        right_outer = base_right_num * interval_map * expansion_scale
+        right_position = torch.linspace(
+            0.0, 1.0, right_wide_num,
+            device=pred_depth.device, dtype=pred_depth.dtype,
+        ).view(1, right_wide_num, 1, 1)
+        offset_parts.append(
+            right_inner.unsqueeze(1) +
+            (right_outer - right_inner).unsqueeze(1) * right_position)
+
+        hypotheses = pred_depth.unsqueeze(1) + torch.cat(offset_parts, dim=1)
+        return torch.maximum(
+            torch.minimum(hypotheses, global_max.view(batch, 1, 1, 1)),
+            global_min.view(batch, 1, 1, 1),
+        )
 
     def forward(self, imgs, proj_matrices, depth_values_orig):
         """
@@ -535,9 +622,10 @@ class VisMVSModel(nn.Module):
             mode='bilinear', align_corners=False).squeeze(1)
 
         s2_interval = base_interval * self.s2_iscale       # per-pixel interval [B, 1]
-        if self.adaptive_range:
-            depth_values_2 = self._build_adaptive_depth_range(
-                depth_1_up, std_1_up, self.s2_dnum, s2_interval,
+        if self.hybrid_sampling:
+            depth_values_2 = self._build_hybrid_depth_range(
+                depth_1_up, std_1_up, self.s2_dnum,
+                self.hybrid_stage2_wide_num, s2_interval,
                 base_start, global_max)
         else:
             depth_values_2 = self._build_per_pixel_depth_range(
@@ -566,9 +654,10 @@ class VisMVSModel(nn.Module):
             mode='bilinear', align_corners=False).squeeze(1)
 
         s3_interval = base_interval * self.s3_iscale
-        if self.adaptive_range:
-            depth_values_3 = self._build_adaptive_depth_range(
-                depth_2_up, std_2_up, self.s3_dnum, s3_interval,
+        if self.hybrid_sampling:
+            depth_values_3 = self._build_hybrid_depth_range(
+                depth_2_up, std_2_up, self.s3_dnum,
+                self.hybrid_stage3_wide_num, s3_interval,
                 base_start, global_max)
         else:
             depth_values_3 = self._build_per_pixel_depth_range(
@@ -599,13 +688,12 @@ class VisMVSModel(nn.Module):
 # Loss
 # =============================================================================
 class VisMVSLoss(nn.Module):
-    """Configurable objective for the independent A/B/C ablation.
+    """Configurable objective for the independent M1/M2/M3 ablation.
 
-    With ``occlusion_aware_supervision=False``, fused depth, pair depth and
-    uncertainty reproduce the original Vis-MVSNet objective. Enabling it adds
-    factor A: source-specific pair masking, detached occluded pair errors and
-    true visibility supervision for the original occ head. Factor C has its
-    own hypothesis-visibility loss and can be trained with factor A disabled.
+    Pair-depth and uncertainty terms always reproduce the original Vis-MVSNet
+    objective. M2 adds true source-specific supervision for the existing
+    visibility head without masking or detaching pair-depth errors. M1 may add
+    a separate visibility target at the ground-truth depth hypothesis.
     """
 
     def __init__(self, pair_l1_weight=1.0, uncertainty_weight=1.0,
@@ -613,7 +701,7 @@ class VisMVSLoss(nn.Module):
                  hypothesis_visibility_weight=0.0,
                  occ_abs_tol=2.0, occ_rel_tol=0.01,
                  stage_weights=(0.5, 1.0, 2.0),
-                 occlusion_aware_supervision=True):
+                 visibility_supervision=False):
         super(VisMVSLoss, self).__init__()
         if len(stage_weights) != 3:
             raise ValueError("stage_weights must contain three values")
@@ -633,7 +721,7 @@ class VisMVSLoss(nn.Module):
         self.visibility_focal_gamma = visibility_focal_gamma
         self.occ_abs_tol = occ_abs_tol
         self.occ_rel_tol = occ_rel_tol
-        self.occlusion_aware_supervision = occlusion_aware_supervision
+        self.visibility_supervision = visibility_supervision
 
     @staticmethod
     def _masked_mean(values, valid):
@@ -704,14 +792,14 @@ class VisMVSLoss(nn.Module):
         if mask.dim() == 3:
             mask = mask.unsqueeze(1)
         needs_pair_visibility = (
-            self.occlusion_aware_supervision or
+            self.visibility_supervision or
             self.hypothesis_visibility_weight > 0.0
         )
         if needs_pair_visibility:
             if (visibility_depths is None or visibility_masks is None or
                     proj_matrices is None):
                 raise ValueError(
-                    "A or C supervision requires source-view visibility GT")
+                    "M1 or M2 supervision requires source-view visibility GT")
             if visibility_depths.dim() != 4 or visibility_masks.dim() != 4:
                 raise ValueError("visibility GT must have shape [B,V,H,W]")
             if proj_matrices.dim() != 4:
@@ -730,7 +818,7 @@ class VisMVSLoss(nn.Module):
                 stage_outputs, self.stage_weights, projection_scales)):
             if len(stage_output) < 3:
                 raise ValueError(
-                    "OA model stage output must contain depth, pair results and hypotheses")
+                    "enhanced model stage output must contain depth, pair results and hypotheses")
             est_depth, pair_results, depth_hypotheses = stage_output[:3]
             _, height, width = est_depth.shape
             stage_number = stage_idx + 1
@@ -798,28 +886,16 @@ class VisMVSLoss(nn.Module):
                     depth_interval.view(-1, 1, 1)
                 )
                 uncertainty = pair_uncert.squeeze(1)
-                if self.occlusion_aware_supervision:
-                    pair_l1_losses.append(
-                        self._masked_mean(pair_error, visible))
-                    # Visible errors train both depth and uncertainty. Occluded
-                    # errors train uncertainty only, because no match exists.
-                    uncertainty_error = torch.where(
-                        visible, pair_error, pair_error.detach())
-                    uncertainty_nll = (
-                        uncertainty_error * (-uncertainty).exp() + uncertainty
-                    )
-                    uncertainty_losses.append(
-                        self._masked_mean(uncertainty_nll, supervised))
+                pair_l1_losses.append(
+                    self._masked_mean(pair_error, valid))
+                uncertainty_nll = (
+                    pair_error * (-uncertainty).exp() + uncertainty
+                )
+                uncertainty_losses.append(
+                    self._masked_mean(uncertainty_nll, valid))
+                if self.visibility_supervision:
                     visibility_losses.append(self._balanced_focal_bce(
                         pair_visibility_logit.squeeze(1), target, supervised))
-                else:
-                    pair_l1_losses.append(
-                        self._masked_mean(pair_error, valid))
-                    uncertainty_nll = (
-                        pair_error * (-uncertainty).exp() + uncertainty
-                    )
-                    uncertainty_losses.append(
-                        self._masked_mean(uncertainty_nll, valid))
 
                 if (hypothesis_logit is not None and
                         self.hypothesis_visibility_weight > 0.0):
@@ -839,7 +915,7 @@ class VisMVSLoss(nn.Module):
                     occluded_count += int(occluded.sum().item())
                     supervised_count += int(supervised.sum().item())
                     possible_count += supervised.numel()
-                if self.occlusion_aware_supervision and supervised.any():
+                if self.visibility_supervision and supervised.any():
                     aggregate_predictions.append(
                         torch.sigmoid(pair_visibility_logit.squeeze(1))[supervised].detach())
                     aggregate_targets.append(target[supervised].detach())
@@ -874,7 +950,7 @@ class VisMVSLoss(nn.Module):
             scalar_stats['l1_stage{}'.format(stage_number)] = fused_l1
             scalar_stats['pair_l1_stage{}'.format(stage_number)] = pair_l1
             scalar_stats['uncertainty_loss_stage{}'.format(stage_number)] = uncertainty_loss
-            if self.occlusion_aware_supervision:
+            if self.visibility_supervision:
                 scalar_stats[
                     'visibility_loss_stage{}'.format(stage_number)
                 ] = visibility_loss

@@ -11,8 +11,8 @@ import time
 from datasets import find_dataset_def
 from models.vismvsnet import VisMVSModel as BaselineModel
 from models.vismvsnet import VisMVSLoss as BaselineLoss
-from models.vismvsnet_oa import VisMVSModel as OcclusionAwareModel
-from models.vismvsnet_oa import VisMVSLoss as OcclusionAwareLoss
+from models.vismvsnet_oa import VisMVSModel as EnhancedModel
+from models.vismvsnet_oa import VisMVSLoss as EnhancedLoss
 from models.model_variants import MODEL_TYPE_CHOICES, get_model_variant
 from utils import *
 import gc
@@ -43,14 +43,14 @@ cudnn.benchmark = True
 # Args
 # =============================================================================
 parser = argparse.ArgumentParser(
-    description='Vis-MVSNet complete A/B/C factorial ablation training')
+    description='Vis-MVSNet final M1/M2/M3 factorial ablation training')
 parser.add_argument('--mode', default='train', help='train or test', choices=['train', 'test', 'profile'])
 parser.add_argument(
-    '--model_type', default='oa',
+    '--model_type', default='vis',
     choices=MODEL_TYPE_CHOICES,
     help=(
-        'complete A/B/C ablation: vis, oa, range, hyp, oa_range, '
-        'oa_hyp, range_hyp or oa_full'))
+        'complete M1/M2/M3 ablation: vis, m1_hyp, m2_visibility, '
+        'm3_hybrid, m1_m2, m1_m3, m2_m3 or full'))
 
 parser.add_argument('--dataset', default='dtu_yao', help='select dataset')
 parser.add_argument('--trainpath', help='train datapath')
@@ -95,7 +95,7 @@ parser.add_argument('--stage1_iscale', type=int, default=4, help='stage 1 interv
 parser.add_argument('--stage2_iscale', type=int, default=2, help='stage 2 interval scale')
 parser.add_argument('--stage3_iscale', type=int, default=1, help='stage 3 interval scale')
 
-# Factors A and C use source-specific visibility GT; B does not.
+# M1 and M2 use source-specific visibility GT; M3 does not.
 parser.add_argument('--visibility_gt_downsample', type=int, default=2,
                     help='downsample for source GT depth/masks; 2 matches stage 3 resolution')
 parser.add_argument('--pair_l1_weight', type=float, default=1.0)
@@ -106,11 +106,18 @@ parser.add_argument('--occ_abs_tol', type=float, default=2.0,
                     help='absolute source-depth agreement tolerance in mm')
 parser.add_argument('--occ_rel_tol', type=float, default=0.01,
                     help='relative source-depth agreement tolerance')
-parser.add_argument('--range_sigma_scale', type=float, default=2.0)
-parser.add_argument('--range_min_scale', type=float, default=1.0)
-parser.add_argument('--range_max_scale', type=float, default=2.0)
 parser.add_argument('--hypothesis_residual_scale', type=float, default=1.0)
 parser.add_argument('--hypothesis_visibility_weight', type=float, default=0.1)
+parser.add_argument('--visibility_fusion_beta', type=float, default=0.2,
+                    help='M2 soft-gate strength in [0,1]')
+parser.add_argument('--hybrid_stage2_wide_num', type=int, default=8,
+                    help='M3 Stage-2 hypotheses reserved for expanded tails')
+parser.add_argument('--hybrid_stage3_wide_num', type=int, default=4,
+                    help='M3 Stage-3 hypotheses reserved for expanded tails')
+parser.add_argument('--hybrid_sigma_scale', type=float, default=2.0,
+                    help='M3 uncertainty-to-tail-width multiplier')
+parser.add_argument('--hybrid_max_scale', type=float, default=2.0,
+                    help='M3 maximum tail expansion relative to baseline')
 
 args = parser.parse_args()
 variant = get_model_variant(args.model_type)
@@ -124,14 +131,18 @@ if args.occ_abs_tol < 0.0 or args.occ_rel_tol < 0.0:
     raise ValueError('occlusion tolerances must be non-negative')
 if args.nviews < 2 or args.eval_nviews < 2:
     raise ValueError('training and evaluation require at least two views')
-if args.range_sigma_scale < 0.0:
-    raise ValueError('--range_sigma_scale must be non-negative')
-if args.range_min_scale <= 0.0 or args.range_max_scale < args.range_min_scale:
-    raise ValueError('range scales require 0 < min <= max')
 if args.hypothesis_residual_scale < 0.0:
     raise ValueError('--hypothesis_residual_scale must be non-negative')
+if not 0.0 <= args.visibility_fusion_beta <= 1.0:
+    raise ValueError('--visibility_fusion_beta must be in [0,1]')
+if args.hybrid_sigma_scale < 0.0:
+    raise ValueError('--hybrid_sigma_scale must be non-negative')
+if args.hybrid_max_scale < 1.0:
+    raise ValueError('--hybrid_max_scale must be at least 1')
 if variant.hypothesis_fusion and args.vismode != 'soft':
-    raise ValueError('factor C currently requires --vismode soft')
+    raise ValueError('M1 currently requires --vismode soft')
+if variant.visibility_modeling and args.vismode != 'soft':
+    raise ValueError('M2 currently requires --vismode soft')
 
 os.makedirs(args.logdir, exist_ok=True)
 sys.stdout = Logger(os.path.join(args.logdir, "logs.txt"))
@@ -161,11 +172,11 @@ if args.mode == "train":
 print("argv:", sys.argv[1:])
 print_args(args)
 print(
-    "ablation factors: A(occlusion supervision)={} "
-    "B(adaptive range)={} C(hypothesis fusion)={} code={}".format(
-        variant.occlusion_supervision,
-        variant.adaptive_range,
+    "ablation factors: M1(hypothesis fusion)={} "
+    "M2(visibility modeling)={} M3(hybrid sampling)={} code={}".format(
         variant.hypothesis_fusion,
+        variant.visibility_modeling,
+        variant.hybrid_sampling,
         variant.code,
     )
 )
@@ -191,8 +202,8 @@ TestImgLoader = DataLoader(test_dataset, args.batch_size, shuffle=False,
                            num_workers=args.test_workers, drop_last=False,
                            pin_memory=True)
 
-model_class = BaselineModel if args.model_type == 'vis' else OcclusionAwareModel
-loss_class = BaselineLoss if args.model_type == 'vis' else OcclusionAwareLoss
+model_class = BaselineModel if args.model_type == 'vis' else EnhancedModel
+loss_class = BaselineLoss if args.model_type == 'vis' else EnhancedLoss
 model_kwargs = dict(
     mode=args.vismode,
     stage1_depth_num=args.stage1_dnum,
@@ -204,16 +215,23 @@ model_kwargs = dict(
 )
 if args.model_type != 'vis':
     model_kwargs.update(
-        adaptive_range=variant.adaptive_range,
-        range_sigma_scale=args.range_sigma_scale,
-        range_min_scale=args.range_min_scale,
-        range_max_scale=args.range_max_scale,
         hypothesis_fusion=variant.hypothesis_fusion,
         hypothesis_residual_scales=(
             args.hypothesis_residual_scale,
             args.hypothesis_residual_scale,
             args.hypothesis_residual_scale,
         ),
+        visibility_fusion=variant.visibility_modeling,
+        visibility_fusion_betas=(
+            args.visibility_fusion_beta,
+            args.visibility_fusion_beta,
+            args.visibility_fusion_beta,
+        ),
+        hybrid_sampling=variant.hybrid_sampling,
+        hybrid_stage2_wide_num=args.hybrid_stage2_wide_num,
+        hybrid_stage3_wide_num=args.hybrid_stage3_wide_num,
+        hybrid_sigma_scale=args.hybrid_sigma_scale,
+        hybrid_max_scale=args.hybrid_max_scale,
     )
 model = model_class(**model_kwargs)
 
@@ -224,7 +242,7 @@ if args.model_type == 'vis':
     model_loss = loss_class(occ_guide=False)
 else:
     model_loss = loss_class(
-        occlusion_aware_supervision=variant.occlusion_supervision,
+        visibility_supervision=variant.visibility_modeling,
         pair_l1_weight=args.pair_l1_weight,
         uncertainty_weight=args.uncertainty_weight,
         visibility_weight=args.visibility_weight,
