@@ -25,6 +25,7 @@ HYBRID_STAGE2_WIDE_NUM="${HYBRID_STAGE2_WIDE_NUM:-8}"
 HYBRID_STAGE3_WIDE_NUM="${HYBRID_STAGE3_WIDE_NUM:-4}"
 HYBRID_SIGMA_SCALE="${HYBRID_SIGMA_SCALE:-2.0}"
 HYBRID_MAX_SCALE="${HYBRID_MAX_SCALE:-2.0}"
+HYBRID_CLIP_MODE="${HYBRID_CLIP_MODE:-global}"
 
 if ! [[ "${TRAIN_NVIEWS}" =~ ^[0-9]+$ ]] || (( TRAIN_NVIEWS < 2 )); then
     echo "TRAIN_NVIEWS must be an integer >= 2, got: ${TRAIN_NVIEWS}" >&2
@@ -109,6 +110,7 @@ CUDA_VISIBLE_DEVICES="${GPU}" python train.py \
     --hybrid_stage3_wide_num "${HYBRID_STAGE3_WIDE_NUM}" \
     --hybrid_sigma_scale "${HYBRID_SIGMA_SCALE}" \
     --hybrid_max_scale "${HYBRID_MAX_SCALE}" \
+    --hybrid_clip_mode "${HYBRID_CLIP_MODE}" \
     --occ_abs_tol 2.0 \
     --occ_rel_tol 0.01 \
     --summary_freq 20 \

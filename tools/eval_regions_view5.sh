@@ -7,7 +7,7 @@ cd "${ROOT_DIR}"
 GPU="${GPU:-0}"
 MODEL_TYPE="${MODEL_TYPE:-vis}"
 DATAPATH="${DATAPATH:-/home/disk_10T/lzh_data/dtu_training/mvs_training/dtu}"
-TESTLIST="${TESTLIST:-lists/dtu/test.txt}"
+TESTLIST="${TESTLIST:-lists/dtu/val.txt}"
 CHECKPOINT="${CHECKPOINT:-}"
 LABEL="${LABEL:-model}"
 LIGHT="${LIGHT:-3}"
@@ -20,6 +20,7 @@ HYBRID_STAGE2_WIDE_NUM="${HYBRID_STAGE2_WIDE_NUM:-8}"
 HYBRID_STAGE3_WIDE_NUM="${HYBRID_STAGE3_WIDE_NUM:-4}"
 HYBRID_SIGMA_SCALE="${HYBRID_SIGMA_SCALE:-2.0}"
 HYBRID_MAX_SCALE="${HYBRID_MAX_SCALE:-2.0}"
+HYBRID_CLIP_MODE="${HYBRID_CLIP_MODE:-global}"
 
 case "${MODEL_TYPE}" in
     vis)           ABLATION_CODE="000" ;;
@@ -48,7 +49,8 @@ echo "label:       ${LABEL}"
 echo "model:       ${MODEL_TYPE}"
 echo "M1/M2/M3:    ${ABLATION_CODE}"
 echo "checkpoint:  ${CHECKPOINT}"
-echo "test list:   ${TESTLIST}"
+echo "validation:  ${TESTLIST}"
+echo "M3 clipping: ${HYBRID_CLIP_MODE}"
 echo "light:       ${LIGHT} (-1 means all lights)"
 echo "output:      ${OUTDIR}"
 echo "======================================================================"
@@ -80,6 +82,7 @@ CUDA_VISIBLE_DEVICES="${GPU}" python tools/eval_region_metrics_dtu_yao.py \
     --hybrid_stage3_wide_num "${HYBRID_STAGE3_WIDE_NUM}" \
     --hybrid_sigma_scale "${HYBRID_SIGMA_SCALE}" \
     --hybrid_max_scale "${HYBRID_MAX_SCALE}" \
+    --hybrid_clip_mode "${HYBRID_CLIP_MODE}" \
     --boundary_pct 10 \
     --large_disp_pct 80 \
     --occ_abs_tol 2.0 \

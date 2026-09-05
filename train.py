@@ -118,6 +118,8 @@ parser.add_argument('--hybrid_sigma_scale', type=float, default=2.0,
                     help='M3 uncertainty-to-tail-width multiplier')
 parser.add_argument('--hybrid_max_scale', type=float, default=2.0,
                     help='M3 maximum tail expansion relative to baseline')
+parser.add_argument('--hybrid_clip_mode', choices=('global', 'none'), default='global',
+                    help='M3 global clipping (legacy) or unclipped baseline boundary policy')
 
 args = parser.parse_args()
 variant = get_model_variant(args.model_type)
@@ -232,6 +234,7 @@ if args.model_type != 'vis':
         hybrid_stage3_wide_num=args.hybrid_stage3_wide_num,
         hybrid_sigma_scale=args.hybrid_sigma_scale,
         hybrid_max_scale=args.hybrid_max_scale,
+        hybrid_clip_mode=args.hybrid_clip_mode,
     )
 model = model_class(**model_kwargs)
 

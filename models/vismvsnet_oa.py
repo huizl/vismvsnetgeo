@@ -398,7 +398,8 @@ class VisMVSModel(nn.Module):
                  hybrid_stage2_wide_num=8,
                  hybrid_stage3_wide_num=4,
                  hybrid_sigma_scale=2.0,
-                 hybrid_max_scale=2.0):
+                 hybrid_max_scale=2.0,
+                 hybrid_clip_mode='global'):
         super(VisMVSModel, self).__init__()
         if len(hypothesis_residual_scales) != 3:
             raise ValueError("hypothesis_residual_scales must contain three values")
@@ -408,6 +409,8 @@ class VisMVSModel(nn.Module):
             raise ValueError("hybrid_sigma_scale must be non-negative")
         if hybrid_max_scale < 1.0:
             raise ValueError("hybrid_max_scale must be at least 1")
+        if hybrid_clip_mode not in ('global', 'none'):
+            raise ValueError("hybrid_clip_mode must be 'global' or 'none'")
         if hybrid_sampling:
             self._validate_hybrid_wide_num(
                 hybrid_stage2_wide_num, stage2_depth_num, "stage 2")
@@ -437,6 +440,7 @@ class VisMVSModel(nn.Module):
         self.hybrid_stage3_wide_num = hybrid_stage3_wide_num
         self.hybrid_sigma_scale = hybrid_sigma_scale
         self.hybrid_max_scale = hybrid_max_scale
+        self.hybrid_clip_mode = hybrid_clip_mode
 
         self.s1_dnum = stage1_depth_num
         self.s1_iscale = stage1_interval_scale
@@ -484,9 +488,11 @@ class VisMVSModel(nn.Module):
             global_min, global_max):
         """Keep local spacing fixed and expand only uncertain tail samples.
 
-        At expansion scale one, the output exactly reproduces the original
+        Before optional global clipping, expansion scale one reproduces the
         uniformly spaced cascade hypotheses. As uncertainty rises, only the
         outer wide_num hypotheses move farther from the predicted center.
+        'global' preserves legacy behavior; 'none' isolates tail expansion
+        from clipping and uses the same boundary policy as the baseline.
         """
         self._validate_hybrid_wide_num(wide_num, depth_num, "cascade")
         batch = pred_depth.shape[0]
@@ -538,6 +544,8 @@ class VisMVSModel(nn.Module):
             (right_outer - right_inner).unsqueeze(1) * right_position)
 
         hypotheses = pred_depth.unsqueeze(1) + torch.cat(offset_parts, dim=1)
+        if self.hybrid_clip_mode == 'none':
+            return hypotheses
         return torch.maximum(
             torch.minimum(hypotheses, global_max.view(batch, 1, 1, 1)),
             global_min.view(batch, 1, 1, 1),

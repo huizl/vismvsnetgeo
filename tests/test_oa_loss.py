@@ -87,6 +87,39 @@ class OcclusionAwareLossTest(unittest.TestCase):
         self.assertGreater(float(width[0, 0, 1]), float(width[0, 0, 0]))
         self.assertTrue(torch.all(hypotheses[:, 1:] >= hypotheses[:, :-1]))
 
+    def test_unclipped_scale_one_matches_baseline_at_global_boundaries(self):
+        model = OcclusionAwareModel(hybrid_sampling=True,
+                                    hybrid_clip_mode='none', hybrid_max_scale=1.0)
+        center = torch.tensor([[[2.0, 29.0]]], requires_grad=True)
+        hypotheses = model._build_hybrid_depth_range(
+            center, torch.full_like(center, 100.0), 8, 4,
+            torch.ones(1, 1), torch.zeros(1, 1), torch.full((1, 1), 30.0))
+        baseline = model._build_per_pixel_depth_range(
+            center, 8, torch.ones(1, 1), 1, 1, 2, center.device, center.dtype)
+        self.assertTrue(torch.allclose(hypotheses, baseline))
+        self.assertLess(float(hypotheses.min()), 0.0)
+        self.assertGreater(float(hypotheses.max()), 30.0)
+        hypotheses.sum().backward()
+        self.assertTrue(torch.isfinite(center.grad).all())
+        self.assertTrue((center.grad > 0).all())
+
+    def test_global_clipping_preserves_legacy_behavior(self):
+        legacy = OcclusionAwareModel(hybrid_sampling=True)
+        unclipped = OcclusionAwareModel(hybrid_sampling=True, hybrid_clip_mode='none')
+        center = torch.tensor([[[2.0, 29.0]]])
+        args = (center, torch.full_like(center, 10.0), 8, 4,
+                torch.ones(1, 1), torch.zeros(1, 1), torch.full((1, 1), 30.0))
+        raw = unclipped._build_hybrid_depth_range(*args)
+        clipped = legacy._build_hybrid_depth_range(*args)
+        self.assertTrue(torch.equal(clipped, raw.clamp(0.0, 30.0)))
+        self.assertTrue((raw[:, 1:] > raw[:, :-1]).all())
+        self.assertTrue((clipped[:, 1:] == clipped[:, :-1]).any())
+        self.assertEqual(set(legacy.state_dict()), set(unclipped.state_dict()))
+
+    def test_hybrid_rejects_unknown_clipping_policy(self):
+        with self.assertRaisesRegex(ValueError, 'hybrid_clip_mode'):
+            OcclusionAwareModel(hybrid_clip_mode='typo')
+
     def test_full_model_adds_only_zero_initialized_weight_heads(self):
         base = OcclusionAwareModel()
         full = OcclusionAwareModel(

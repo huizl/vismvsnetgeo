@@ -2,6 +2,8 @@
 
 本目录用于研究 Vis-MVSNet 在大视差、遮挡和深度边界区域的改进。当前正式方法由三个独立模块组成，不再使用旧的 OA/Range 因子定义。
 
+当前实验流程：`train.txt` 训练，训练期间与训练结束后均只在 `val.txt` 验证、选 checkpoint 和参数。后续实验不运行 `test.txt`。具体诊断与重训顺序见 [Val 实验流程](docs/VAL_WORKFLOW.md)。
+
 ## 三个模块
 
 | 模块 | 名称 | 作用位置 |
@@ -85,6 +87,7 @@ HYBRID_STAGE2_WIDE_NUM=8
 HYBRID_STAGE3_WIDE_NUM=4
 HYBRID_SIGMA_SCALE=2.0
 HYBRID_MAX_SCALE=2.0
+HYBRID_CLIP_MODE=global
 ```
 
 ## 队列训练
@@ -122,7 +125,15 @@ Val 示例：
 GPU=0 MODEL_TYPE=m2_visibility CHECKPOINT=./checkpoints/dtu/m2_visibility_view5/best_2mm.ckpt LABEL=m2_visibility_view5 TESTLIST=lists/dtu/val.txt DATAPATH=/home/disk_10T/lzh_data/dtu_training/mvs_training/dtu OUTDIR=./eval/ablation_val_light3/m2_visibility_view5 bash tools/eval_regions_view5.sh
 ```
 
-Test 时只把 `TESTLIST` 和 `OUTDIR` 改为 test 对应目录。评测固定使用五个模型视图和五个区域定义视图，默认只测 `light=3`。
+`eval_regions_view5.sh` 默认 `TESTLIST=lists/dtu/val.txt`；变量名 `TESTLIST` 是历史接口，当前用于验证集。评测固定使用五个模型视图和五个区域定义视图，默认只测 `light=3`。
+
+已有 checkpoint 的 Val 诊断（默认五视图训练模型，统一五视图推理）：
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/validate_val_diagnostics.py --train_nviews 5 --suite all --outdir eval/val_diagnostics_view5_round1
+```
+
+脚本只读取 `lists/dtu/val.txt`，运行 vis 基线、M2 四组 beta 和 M3 四组裁剪/扩展对照。`--dry_run` 只展示命令；`--suite m2` 或 `--suite m3` 可只跑一个模块及基线。输出目录必须新建或为空，避免覆盖现有结果。
 
 输出：
 
@@ -151,6 +162,7 @@ boundary_and_occluded
 - 旧 `hyp` checkpoint 的参数结构与新 `m1_hyp` 相同，可用 `MODEL_TYPE=m1_hyp` 评测。
 - `m2_visibility`、`m3_hybrid` 及其组合代表新方法语义，应重新训练。
 - M3 没有新增可学习参数，但推理时必须使用正确的 `MODEL_TYPE` 和相同采样参数。
+- M3 新增 `HYBRID_CLIP_MODE=global|none`；默认 `global` 复现旧结果，`none` 去掉全局裁剪。训练、评估均支持该选项，区域 CSV 记录 `hybrid_clip_mode`。同一 checkpoint 切换选项用于诊断，正式结果需保持训练与推理配置一致。
 
 ## 本地验证
 

@@ -47,7 +47,8 @@ def parse_args():
                         help="Model label; defaults to the checkpoint directory name.")
     parser.add_argument("--testpath", required=True,
                         help="DTU training root containing Rectified/, Depths/ and Cameras/.")
-    parser.add_argument("--testlist", required=True, help="e.g. lists/dtu/val.txt")
+    parser.add_argument("--testlist", default=os.path.join(ROOT, "lists", "dtu", "val.txt"),
+                        help="Validation scan list; defaults to lists/dtu/val.txt")
     parser.add_argument("--outdir", default="./outputs/region_metrics")
 
     parser.add_argument("--vismode", default="soft",
@@ -66,6 +67,7 @@ def parse_args():
     parser.add_argument("--hybrid_stage3_wide_num", type=int, default=4)
     parser.add_argument("--hybrid_sigma_scale", type=float, default=2.0)
     parser.add_argument("--hybrid_max_scale", type=float, default=2.0)
+    parser.add_argument("--hybrid_clip_mode", choices=("global", "none"), default="global")
     parser.add_argument("--eval_nviews", type=int, default=5,
                         help="Total model views, including the reference view.")
     parser.add_argument("--region_nviews", type=int, default=5,
@@ -120,6 +122,7 @@ def build_model(args):
         hybrid_stage3_wide_num=args.hybrid_stage3_wide_num,
         hybrid_sigma_scale=args.hybrid_sigma_scale,
         hybrid_max_scale=args.hybrid_max_scale,
+        hybrid_clip_mode=args.hybrid_clip_mode,
     )
 
 
@@ -564,6 +567,7 @@ def main():
                         "hybrid_stage3_wide_num": args.hybrid_stage3_wide_num,
                         "hybrid_sigma_scale": args.hybrid_sigma_scale,
                         "hybrid_max_scale": args.hybrid_max_scale,
+                        "hybrid_clip_mode": args.hybrid_clip_mode,
                         "scan": scan,
                         "view": int(ref_view),
                         "light": int(light),
@@ -599,6 +603,7 @@ def main():
             "hybrid_stage3_wide_num": args.hybrid_stage3_wide_num,
             "hybrid_sigma_scale": args.hybrid_sigma_scale,
             "hybrid_max_scale": args.hybrid_max_scale,
+            "hybrid_clip_mode": args.hybrid_clip_mode,
             "light": "all" if args.light == -1 else args.light,
         })
 
@@ -609,6 +614,7 @@ def main():
         "eval_nviews", "region_nviews", "hypothesis_residual_scale",
         "visibility_fusion_beta", "hybrid_stage2_wide_num",
         "hybrid_stage3_wide_num", "hybrid_sigma_scale", "hybrid_max_scale",
+        "hybrid_clip_mode",
     ]
     per_image_fields = common_fields + [
         "scan", "view", "light", "region", "pixels", *METRIC_NAMES,
