@@ -4,6 +4,8 @@
 
 当前实验流程：`train.txt` 训练，训练期间与训练结束后均只在 `val.txt` 验证、选 checkpoint 和参数。后续实验不运行 `test.txt`。具体诊断与重训顺序见 [Val 实验流程](docs/VAL_WORKFLOW.md)。
 
+第一轮 Val 诊断已完成。当前优先运行 [第二轮对照](docs/VAL_ROUND2.md)：同一 vis 权重下的 M3 采样对照，以及 M2 训练期 beta=0、保留可见性监督的对照。
+
 ## 三个模块
 
 | 模块 | 名称 | 作用位置 |
@@ -134,6 +136,16 @@ CUDA_VISIBLE_DEVICES=0 python tools/validate_val_diagnostics.py --train_nviews 5
 ```
 
 脚本只读取 `lists/dtu/val.txt`，运行 vis 基线、M2 四组 beta 和 M3 四组裁剪/扩展对照。`--dry_run` 只展示命令；`--suite m2` 或 `--suite m3` 可只跑一个模块及基线。输出目录必须新建或为空，避免覆盖现有结果。
+
+第二轮 `--suite m3_vis` 运行三组：vis、M3 none+scale1、M3 none+scale2，三组均读取 `vis_view5/best_2mm.ckpt`。第一轮 `all` 仍为原有九组。
+
+M2 训练期关闭门控、保留监督，并自动评估 Val：
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/train_m2_supervision_val.py --train_nviews 5 --seed 1
+```
+
+该脚本从头训练，固定 beta=0 和 visibility loss weight=0.2，训练完成后使用 `best_2mm.ckpt` 自动执行 Val light=3 区域评估。新权重与结果保存到 `checkpoints/val_round2/` 和 `eval/val_round2/` 下的独立目录。
 
 输出：
 

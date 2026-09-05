@@ -31,20 +31,25 @@ def project_path(value):
 def build_experiments(args):
     checkpoint_root = project_path(args.checkpoint_root)
     outdir = project_path(args.outdir)
-    settings = [("vis", "vis", {})]
+    # Checkpoint source is independent of the inference model for m3_vis.
+    settings = [("vis", "vis", {}, "vis")]
     if args.suite in ("all", "m2"):
         for beta in ("0.0", "0.1", "0.2", "0.3"):
             settings.append(("m2_visibility", "m2_beta" + beta,
-                             {"visibility_fusion_beta": beta}))
+                             {"visibility_fusion_beta": beta}, "m2_visibility"))
     if args.suite in ("all", "m3"):
         for clipping in ("global", "none"):
             for scale in ("1.0", "2.0"):
                 settings.append(("m3_hybrid", "m3_" + clipping + "_scale" + scale,
                                  {"hybrid_clip_mode": clipping,
-                                  "hybrid_max_scale": scale}))
+                                  "hybrid_max_scale": scale}, "m3_hybrid"))
+    if args.suite == "m3_vis":
+        for scale in ("1.0", "2.0"):
+            settings.append(("m3_hybrid", "vis_weights_m3_none_scale" + scale,
+                             {"hybrid_clip_mode": "none", "hybrid_max_scale": scale}, "vis"))
     experiments = []
-    for model_type, label, overrides in settings:
-        checkpoint = checkpoint_root / (model_type + "_view" + str(args.train_nviews)) / args.checkpoint_name
+    for model_type, label, overrides, checkpoint_model in settings:
+        checkpoint = checkpoint_root / (checkpoint_model + "_view" + str(args.train_nviews)) / args.checkpoint_name
         output = outdir / label
         options = {
             "model_type": model_type,
@@ -85,9 +90,13 @@ def write_comparison(experiments, outdir):
             }
     lines = ["# Val inference diagnostics", "",
              "Fixed val.txt, light=3, five inference/region views. Pixel-weighted metrics.",
-             "Each module's interventions reuse its trained checkpoint; these are inference diagnostics, not retrained ablations.",
+             "These are inference diagnostics, not retrained ablations. Checkpoint sources are listed below.",
              "M2 beta=0 disables the inference gate; it does not undo visibility supervision during training.",
-             "M3 scale=1 disables expansion; clipping is controlled independently.", ""]
+             "M3 scale=1 disables expansion; clipping is controlled independently.", "",
+             "| Setting | Checkpoint |", "| --- | --- |"]
+    for experiment in experiments:
+        lines.append("| " + experiment["label"] + " | " + experiment["checkpoint"] + " |")
+    lines.append("")
     for region in REGIONS:
         baseline = summaries["vis"][region]
         lines.extend(["## " + region, "",
@@ -108,7 +117,8 @@ def write_comparison(experiments, outdir):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--suite", choices=("all", "m2", "m3"), default="all")
+    parser.add_argument("--suite", choices=("all", "m2", "m3", "m3_vis"), default="all",
+                        help="m3_vis runs baseline and two M3 settings using the same vis checkpoint")
     parser.add_argument("--train_nviews", type=int, choices=(3, 5), default=5)
     parser.add_argument("--datapath", default="/home/disk_10T/lzh_data/dtu_training/mvs_training/dtu")
     parser.add_argument("--checkpoint_root", default="checkpoints/dtu")

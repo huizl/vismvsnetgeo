@@ -53,6 +53,20 @@ class ValDiagnosticsTest(unittest.TestCase):
         self.assertEqual(len(experiments), 5)
         self.assertTrue(all('_view3' in e['checkpoint'] for e in experiments))
 
+    def test_m3_vis_suite_uses_only_the_baseline_checkpoint(self):
+        experiments = build_experiments(self.settings(suite='m3_vis'))
+        self.assertEqual(len(experiments), 3)
+        self.assertEqual(len({e['checkpoint'] for e in experiments}), 1)
+        self.assertTrue(all('vis_view5' in e['checkpoint'] for e in experiments))
+        parsed = []
+        for experiment in experiments:
+            with patch('sys.argv', experiment['command'][1:]):
+                parsed.append(parse_args())
+        self.assertEqual(parsed[0].model_type, 'vis')
+        self.assertEqual([a.hybrid_max_scale for a in parsed[1:]], [1.0, 2.0])
+        self.assertTrue(all(a.hybrid_clip_mode == 'none' and a.model_type == 'm3_hybrid'
+                            for a in parsed[1:]))
+
 
 if __name__ == '__main__':
     unittest.main()
