@@ -43,7 +43,7 @@ class ConvBn3D(nn.Module):
         return self.bn(self.conv(x))
 
 
-def homo_warping(src_fea, src_proj, ref_proj, depth_values):
+def homo_warping(src_fea, src_proj, ref_proj, depth_values, return_valid=False):
     """Warp source features to reference view using differentiable homography.
 
     Args:
@@ -89,11 +89,20 @@ def homo_warping(src_fea, src_proj, ref_proj, depth_values):
         proj_y_normalized = proj_xy[:, 1, :, :] / ((height - 1) / 2) - 1
         proj_xy = torch.stack((proj_x_normalized, proj_y_normalized), dim=3)  # [B, Ndepth, H*W, 2]
         grid = proj_xy
+        if return_valid:
+            valid = (torch.isfinite(grid).all(dim=-1)
+                     & (proj_xyz[:, 2] > 1e-6)
+                     & (grid.abs() <= 1.0).all(dim=-1))
+            # Keep the historical grid convention; sanitize invalid projections
+            # only for the new validity-aware path.
+            grid = torch.where(valid.unsqueeze(-1), grid, torch.full_like(grid, 2.0))
 
     warped_src_fea = F.grid_sample(src_fea, grid.view(batch, num_depth * height, width, 2),
                                    mode='bilinear', padding_mode='zeros')
     warped_src_fea = warped_src_fea.view(batch, channels, num_depth, height, width)
 
+    if return_valid:
+        return warped_src_fea, valid.reshape(batch, 1, num_depth, height, width)
     return warped_src_fea
 
 

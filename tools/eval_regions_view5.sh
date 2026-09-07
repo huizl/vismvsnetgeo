@@ -23,14 +23,14 @@ HYBRID_MAX_SCALE="${HYBRID_MAX_SCALE:-2.0}"
 HYBRID_CLIP_MODE="${HYBRID_CLIP_MODE:-global}"
 
 case "${MODEL_TYPE}" in
-    vis)           ABLATION_CODE="000" ;;
-    m1_hyp)        ABLATION_CODE="100" ;;
-    m2_visibility) ABLATION_CODE="010" ;;
-    m3_hybrid)     ABLATION_CODE="001" ;;
-    m1_m2)         ABLATION_CODE="110" ;;
-    m1_m3)         ABLATION_CODE="101" ;;
-    m2_m3)         ABLATION_CODE="011" ;;
-    full)          ABLATION_CODE="111" ;;
+    vis|v2_vis)           ABLATION_CODE="000" ;;
+    m1_hyp|v2_m1)         ABLATION_CODE="100" ;;
+    m2_visibility|v2_m2)  ABLATION_CODE="010" ;;
+    m3_hybrid|v2_m3)      ABLATION_CODE="001" ;;
+    m1_m2|v2_m1_m2)       ABLATION_CODE="110" ;;
+    m1_m3|v2_m1_m3)       ABLATION_CODE="101" ;;
+    m2_m3|v2_m2_m3)       ABLATION_CODE="011" ;;
+    full|v2_full)         ABLATION_CODE="111" ;;
     *)
         echo "Unknown MODEL_TYPE: ${MODEL_TYPE}" >&2
         echo "Use: vis m1_hyp m2_visibility m3_hybrid m1_m2 m1_m3 m2_m3 full" >&2

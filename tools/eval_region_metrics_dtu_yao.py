@@ -111,7 +111,10 @@ def build_model(args):
             args.hypothesis_residual_scale,
             args.hypothesis_residual_scale,
         ),
-        visibility_fusion=variant.visibility_modeling,
+        visibility_fusion=variant.uses_visibility_gate,
+        visibility_supervision_only=(variant.revision == 'v2' and variant.visibility_modeling),
+        projection_validity=variant.projection_validity,
+        guided_centers=variant.guided_centers,
         visibility_fusion_betas=(
             args.visibility_fusion_beta,
             args.visibility_fusion_beta,
@@ -422,6 +425,8 @@ def print_summary(label, rows):
 def main():
     args = parse_args()
     variant = get_model_variant(args.model_type)
+    if variant.revision == 'v2':
+        args.visibility_fusion_beta = 0.0
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required")
     if args.eval_nviews < 2 or args.region_nviews < 2:
@@ -473,6 +478,10 @@ def main():
         "factor_m1_hypothesis_fusion": int(variant.hypothesis_fusion),
         "factor_m2_visibility_modeling": int(variant.visibility_modeling),
         "factor_m3_hybrid_sampling": int(variant.hybrid_sampling),
+        "method_revision": variant.revision,
+        "factor_m1_projection_validity": int(variant.projection_validity),
+        "factor_m3_guided_centers": int(variant.guided_centers),
+        "visibility_gate_enabled": int(variant.uses_visibility_gate),
     }
 
     per_image_rows = []
@@ -611,6 +620,8 @@ def main():
         "label", "model_type", "ablation_code",
         "factor_m1_hypothesis_fusion", "factor_m2_visibility_modeling",
         "factor_m3_hybrid_sampling", "checkpoint", "testlist",
+        "method_revision", "factor_m1_projection_validity", "factor_m3_guided_centers",
+        "visibility_gate_enabled",
         "eval_nviews", "region_nviews", "hypothesis_residual_scale",
         "visibility_fusion_beta", "hybrid_stage2_wide_num",
         "hybrid_stage3_wide_num", "hybrid_sigma_scale", "hybrid_max_scale",

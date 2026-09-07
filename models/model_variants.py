@@ -15,17 +15,31 @@ class ModelVariant:
     hypothesis_fusion: bool
     visibility_modeling: bool
     hybrid_sampling: bool
+    revision: str = 'legacy'
+    guided_centers: bool = False
+
+    @property
+    def projection_validity(self):
+        return self.revision == 'v2' and self.hypothesis_fusion
+
+    @property
+    def uses_visibility_gate(self):
+        return self.revision == 'legacy' and self.visibility_modeling
+
+    @property
+    def hypothesis_visibility_supervision(self):
+        return self.revision == 'legacy' and self.hypothesis_fusion
 
     @property
     def needs_visibility_gt(self):
-        return self.hypothesis_fusion or self.visibility_modeling
+        return self.hypothesis_visibility_supervision or self.visibility_modeling
 
     @property
     def code(self):
         return "{}{}{}".format(
             int(self.hypothesis_fusion),
             int(self.visibility_modeling),
-            int(self.hybrid_sampling),
+            int(self.hybrid_sampling or self.guided_centers),
         )
 
 
@@ -39,6 +53,21 @@ MODEL_VARIANTS = {
     "m2_m3": ModelVariant(False, True, True),
     "full": ModelVariant(True, True, True),
 }
+
+# Separate names prevent the revised M3 and auxiliary-only M2 from silently
+# changing the semantics of existing checkpoints and CSVs.
+for name, flags in {
+    'v2_vis': (False, False, False),
+    'v2_m1': (True, False, False),
+    'v2_m2': (False, True, False),
+    'v2_m3': (False, False, True),
+    'v2_m1_m2': (True, True, False),
+    'v2_m1_m3': (True, False, True),
+    'v2_m2_m3': (False, True, True),
+    'v2_full': (True, True, True),
+}.items():
+    MODEL_VARIANTS[name] = ModelVariant(flags[0], flags[1], False,
+                                        revision='v2', guided_centers=flags[2])
 
 MODEL_TYPE_CHOICES = tuple(MODEL_VARIANTS)
 

@@ -15,6 +15,7 @@ LOGDIR="${LOGDIR:-./checkpoints/dtu/${MODEL_TYPE}_view${TRAIN_NVIEWS}}"
 INIT_CKPT="${INIT_CKPT:-}"
 BATCH_SIZE="${BATCH_SIZE:-4}"
 EPOCHS="${EPOCHS:-16}"
+SEED="${SEED:-1}"
 TRAIN_WORKERS="${TRAIN_WORKERS:-8}"
 TEST_WORKERS="${TEST_WORKERS:-4}"
 VISIBILITY_GT_DOWNSAMPLE="${VISIBILITY_GT_DOWNSAMPLE:-2}"
@@ -37,14 +38,14 @@ if ! [[ "${EVAL_NVIEWS}" =~ ^[0-9]+$ ]] || (( EVAL_NVIEWS < 2 )); then
 fi
 
 case "${MODEL_TYPE}" in
-    vis)           ABLATION_CODE="000" ;;
-    m1_hyp)        ABLATION_CODE="100" ;;
-    m2_visibility) ABLATION_CODE="010" ;;
-    m3_hybrid)     ABLATION_CODE="001" ;;
-    m1_m2)         ABLATION_CODE="110" ;;
-    m1_m3)         ABLATION_CODE="101" ;;
-    m2_m3)         ABLATION_CODE="011" ;;
-    full)          ABLATION_CODE="111" ;;
+    vis|v2_vis)           ABLATION_CODE="000" ;;
+    m1_hyp|v2_m1)         ABLATION_CODE="100" ;;
+    m2_visibility|v2_m2)  ABLATION_CODE="010" ;;
+    m3_hybrid|v2_m3)      ABLATION_CODE="001" ;;
+    m1_m2|v2_m1_m2)       ABLATION_CODE="110" ;;
+    m1_m3|v2_m1_m3)       ABLATION_CODE="101" ;;
+    m2_m3|v2_m2_m3)       ABLATION_CODE="011" ;;
+    full|v2_full)         ABLATION_CODE="111" ;;
     *)
         echo "Unknown MODEL_TYPE: ${MODEL_TYPE}" >&2
         echo "Use: vis m1_hyp m2_visibility m3_hybrid m1_m2 m1_m3 m2_m3 full" >&2
@@ -117,5 +118,5 @@ CUDA_VISIBLE_DEVICES="${GPU}" python train.py \
     --save_freq 1 \
     --train_workers "${TRAIN_WORKERS}" \
     --test_workers "${TEST_WORKERS}" \
-    --seed 1 \
+    --seed "${SEED}" \
     "${LOAD_ARGS[@]}"

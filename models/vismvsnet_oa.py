@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from .module import *
 from .dynamic_visibility import ground_truth_pair_visibility
+from .guided_centers import GuidedCenterUpsampler
 
 
 # =============================================================================
@@ -208,7 +209,8 @@ class SingleStage(nn.Module):
     def __init__(self, hypothesis_fusion=False,
                  hypothesis_residual_scale=1.0,
                  visibility_fusion=False,
-                 visibility_fusion_beta=0.2):
+                 visibility_fusion_beta=0.2,
+                 projection_validity=False):
         super(SingleStage, self).__init__()
         if hypothesis_residual_scale < 0.0:
             raise ValueError("hypothesis_residual_scale must be non-negative")
@@ -222,6 +224,7 @@ class SingleStage(nn.Module):
         self.hypothesis_residual_scale = hypothesis_residual_scale
         self.visibility_fusion = visibility_fusion
         self.visibility_fusion_beta = visibility_fusion_beta
+        self.projection_validity = projection_validity
         self.hypothesis_weight_net = (
             HypothesisWeightNet() if hypothesis_fusion else None)
         if visibility_fusion:
@@ -268,7 +271,7 @@ class SingleStage(nn.Module):
 
         # ---- fusion buffers ----
         if mode in ('soft', 'hard'):
-            weight_depth = D if mode == 'soft' and self.hypothesis_fusion else 1
+            weight_depth = D if mode == 'soft' and (self.hypothesis_fusion or self.projection_validity) else 1
             weight_sum = torch.zeros(
                 B, 1, weight_depth, H, W,
                 device=ref_feat.device, dtype=ref_feat.dtype)
@@ -280,7 +283,11 @@ class SingleStage(nn.Module):
 
         # ---- per source view ----
         for src_feat, src_proj in zip(src_feats, src_projs):
-            warped_src = homo_warping(src_feat, src_proj, ref_proj, depth_values)
+            if self.projection_validity:
+                warped_src, projection_valid = homo_warping(
+                    src_feat, src_proj, ref_proj, depth_values, return_valid=True)
+            else:
+                warped_src = homo_warping(src_feat, src_proj, ref_proj, depth_values)
             cost_volume = groupwise_correlation(ref_volume, warped_src, 8, dim=1)   # [B, 8, D, H, W]
 
             interm = self.reg(cost_volume)                                           # [B, 8, D, H, W]
@@ -295,6 +302,11 @@ class SingleStage(nn.Module):
             # ---- fuse intermediate features ----
             if mode == 'soft':
                 log_weight = -uncert.unsqueeze(2)
+                if self.projection_validity:
+                    # Positive floor keeps normalization defined when every
+                    # source is out of view; this is projection validity, not GT occlusion.
+                    support = 0.05 + 0.95 * projection_valid.to(log_weight.dtype)
+                    log_weight = log_weight + support.log()
                 if self.hypothesis_fusion:
                     depth_coordinate = self._normalized_depth_coordinate(
                         depth_values, H, W).unsqueeze(1)
@@ -399,7 +411,10 @@ class VisMVSModel(nn.Module):
                  hybrid_stage3_wide_num=4,
                  hybrid_sigma_scale=2.0,
                  hybrid_max_scale=2.0,
-                 hybrid_clip_mode='global'):
+                 hybrid_clip_mode='global',
+                 projection_validity=False,
+                 guided_centers=False,
+                 visibility_supervision_only=False):
         super(VisMVSModel, self).__init__()
         if len(hypothesis_residual_scales) != 3:
             raise ValueError("hypothesis_residual_scales must contain three values")
@@ -411,6 +426,8 @@ class VisMVSModel(nn.Module):
             raise ValueError("hybrid_max_scale must be at least 1")
         if hybrid_clip_mode not in ('global', 'none'):
             raise ValueError("hybrid_clip_mode must be 'global' or 'none'")
+        if guided_centers and hybrid_sampling:
+            raise ValueError("guided centers and legacy hybrid sampling are separate M3 definitions")
         if hybrid_sampling:
             self._validate_hybrid_wide_num(
                 hybrid_stage2_wide_num, stage2_depth_num, "stage 2")
@@ -421,17 +438,20 @@ class VisMVSModel(nn.Module):
             hypothesis_fusion=hypothesis_fusion,
             hypothesis_residual_scale=hypothesis_residual_scales[0],
             visibility_fusion=visibility_fusion,
-            visibility_fusion_beta=visibility_fusion_betas[0])
+            visibility_fusion_beta=visibility_fusion_betas[0],
+            projection_validity=projection_validity)
         self.stage2 = SingleStage(
             hypothesis_fusion=hypothesis_fusion,
             hypothesis_residual_scale=hypothesis_residual_scales[1],
             visibility_fusion=visibility_fusion,
-            visibility_fusion_beta=visibility_fusion_betas[1])
+            visibility_fusion_beta=visibility_fusion_betas[1],
+            projection_validity=projection_validity)
         self.stage3 = SingleStage(
             hypothesis_fusion=hypothesis_fusion,
             hypothesis_residual_scale=hypothesis_residual_scales[2],
             visibility_fusion=visibility_fusion,
-            visibility_fusion_beta=visibility_fusion_betas[2])
+            visibility_fusion_beta=visibility_fusion_betas[2],
+            projection_validity=projection_validity)
         self.mode = mode
         self.hypothesis_fusion = hypothesis_fusion
         self.visibility_fusion = visibility_fusion
@@ -441,6 +461,12 @@ class VisMVSModel(nn.Module):
         self.hybrid_sigma_scale = hybrid_sigma_scale
         self.hybrid_max_scale = hybrid_max_scale
         self.hybrid_clip_mode = hybrid_clip_mode
+        self.guided_centers = guided_centers
+        self.center_upsampler2 = GuidedCenterUpsampler() if guided_centers else None
+        self.center_upsampler3 = GuidedCenterUpsampler() if guided_centers else None
+        if visibility_supervision_only:
+            for stage in (self.stage1, self.stage2, self.stage3):
+                nn.init.zeros_(stage.uncert_net.occ_head.weight)
 
         self.s1_dnum = stage1_depth_num
         self.s1_iscale = stage1_interval_scale
@@ -630,6 +656,8 @@ class VisMVSModel(nn.Module):
             mode='bilinear', align_corners=False).squeeze(1)
 
         s2_interval = base_interval * self.s2_iscale       # per-pixel interval [B, 1]
+        if self.guided_centers:
+            depth_1_up = self.center_upsampler2(depth_1, ref_feat4, base_interval)
         if self.hybrid_sampling:
             depth_values_2 = self._build_hybrid_depth_range(
                 depth_1_up, std_1_up, self.s2_dnum,
@@ -662,6 +690,8 @@ class VisMVSModel(nn.Module):
             mode='bilinear', align_corners=False).squeeze(1)
 
         s3_interval = base_interval * self.s3_iscale
+        if self.guided_centers:
+            depth_2_up = self.center_upsampler3(depth_2, ref_feat2, base_interval)
         if self.hybrid_sampling:
             depth_values_3 = self._build_hybrid_depth_range(
                 depth_2_up, std_2_up, self.s3_dnum,

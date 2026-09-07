@@ -15,9 +15,9 @@ class ModelVariantTest(unittest.TestCase):
             "m2_m3": "011",
             "full": "111",
         }
-        self.assertEqual(set(MODEL_VARIANTS), set(expected))
+        self.assertEqual({n for n in MODEL_VARIANTS if not n.startswith('v2_')}, set(expected))
         self.assertEqual(
-            {name: variant.code for name, variant in MODEL_VARIANTS.items()},
+            {name: variant.code for name, variant in MODEL_VARIANTS.items() if not name.startswith('v2_')},
             expected,
         )
 

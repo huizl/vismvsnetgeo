@@ -28,7 +28,7 @@ def build_commands(args):
     logdir = project_path(args.logdir)
     outdir = project_path(args.outdir)
     common = {
-        "model_type": "m2_visibility", "testpath": datapath,
+        "model_type": getattr(args, "model_type", "m2_visibility"), "testpath": datapath,
         "testlist": str(ROOT / "lists/dtu/val.txt"), "eval_nviews": 5,
         "batch_size": args.batch_size, "numdepth": 192, "interval_scale": 1.06,
         "vismode": "soft", "stage1_dnum": 48, "stage1_iscale": 4,
@@ -45,7 +45,7 @@ def build_commands(args):
                  hypothesis_visibility_weight=0.1, summary_freq=20, save_freq=1,
                  train_workers=args.train_workers, test_workers=args.eval_workers)
     evaluate = dict(common, loadckpt=str(logdir / "best_2mm.ckpt"),
-                    label=f"m2_supervision_only_view{args.train_nviews}_seed{args.seed}",
+                    label=getattr(args, "label", f"m2_supervision_only_view{args.train_nviews}_seed{args.seed}"),
                     outdir=str(outdir), region_nviews=5, light=3,
                     num_workers=args.eval_workers, boundary_pct=10, large_disp_pct=80)
 

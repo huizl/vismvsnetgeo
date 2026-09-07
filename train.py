@@ -123,6 +123,9 @@ parser.add_argument('--hybrid_clip_mode', choices=('global', 'none'), default='g
 
 args = parser.parse_args()
 variant = get_model_variant(args.model_type)
+if variant.revision == 'v2':
+    # v2 M2 is auxiliary supervision only; beta is not an active v2 factor.
+    args.visibility_fusion_beta = 0.0
 
 if args.visibility_gt_downsample < 1:
     raise ValueError('--visibility_gt_downsample must be at least 1')
@@ -175,10 +178,10 @@ print("argv:", sys.argv[1:])
 print_args(args)
 print(
     "ablation factors: M1(hypothesis fusion)={} "
-    "M2(visibility modeling)={} M3(hybrid sampling)={} code={}".format(
+    "M2(visibility modeling)={} M3(sampling/centers)={} code={}".format(
         variant.hypothesis_fusion,
         variant.visibility_modeling,
-        variant.hybrid_sampling,
+        variant.hybrid_sampling or variant.guided_centers,
         variant.code,
     )
 )
@@ -204,8 +207,9 @@ TestImgLoader = DataLoader(test_dataset, args.batch_size, shuffle=False,
                            num_workers=args.test_workers, drop_last=False,
                            pin_memory=True)
 
-model_class = BaselineModel if args.model_type == 'vis' else EnhancedModel
-loss_class = BaselineLoss if args.model_type == 'vis' else EnhancedLoss
+is_baseline = args.model_type in ('vis', 'v2_vis')
+model_class = BaselineModel if is_baseline else EnhancedModel
+loss_class = BaselineLoss if is_baseline else EnhancedLoss
 model_kwargs = dict(
     mode=args.vismode,
     stage1_depth_num=args.stage1_dnum,
@@ -215,7 +219,7 @@ model_kwargs = dict(
     stage3_depth_num=args.stage3_dnum,
     stage3_interval_scale=args.stage3_iscale,
 )
-if args.model_type != 'vis':
+if not is_baseline:
     model_kwargs.update(
         hypothesis_fusion=variant.hypothesis_fusion,
         hypothesis_residual_scales=(
@@ -223,7 +227,10 @@ if args.model_type != 'vis':
             args.hypothesis_residual_scale,
             args.hypothesis_residual_scale,
         ),
-        visibility_fusion=variant.visibility_modeling,
+        visibility_fusion=variant.uses_visibility_gate,
+        visibility_supervision_only=(variant.revision == 'v2' and variant.visibility_modeling),
+        projection_validity=variant.projection_validity,
+        guided_centers=variant.guided_centers,
         visibility_fusion_betas=(
             args.visibility_fusion_beta,
             args.visibility_fusion_beta,
@@ -241,7 +248,7 @@ model = model_class(**model_kwargs)
 if args.mode in ["train", "test"]:
     model = nn.DataParallel(model)
 model.cuda()
-if args.model_type == 'vis':
+if is_baseline:
     model_loss = loss_class(occ_guide=False)
 else:
     model_loss = loss_class(
@@ -252,7 +259,7 @@ else:
         visibility_focal_gamma=args.visibility_focal_gamma,
         hypothesis_visibility_weight=(
             args.hypothesis_visibility_weight
-            if variant.hypothesis_fusion else 0.0),
+            if variant.hypothesis_visibility_supervision else 0.0),
         occ_abs_tol=args.occ_abs_tol,
         occ_rel_tol=args.occ_rel_tol,
     )

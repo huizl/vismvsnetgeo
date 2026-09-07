@@ -1,5 +1,13 @@
 # Vis-MVSNetGeo
 
+当前优先方案为 [v2 三模块候选](docs/METHOD_V2.md)：投影有效性约束的假设级融合、仅训练期可见性监督、参考特征引导的级联中心上采样。使用独立的 `v2_*` 模型名，先验证基线与三个单模块，再决定组合。下文旧八组及其 checkpoint 定义保留用于复现历史实验。
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/train_v2_val.py --train_nviews 5 --seed 1
+```
+
+该命令依次从头训练 `v2_vis v2_m1 v2_m2 v2_m3`，每组训练完成后自动在 `val.txt` 上评估 `best_2mm.ckpt`，输出到 `eval/v2_val_view5_seed1/`。`--dry_run` 可预览命令，`--models` 可指定单组或组合。三个模块当前属于候选，M1/M3 尚无 v2 Val 结果，不能预先视为正向改进。
+
 本目录用于研究 Vis-MVSNet 在大视差、遮挡和深度边界区域的改进。当前正式方法由三个独立模块组成，不再使用旧的 OA/Range 因子定义。
 
 当前实验流程：`train.txt` 训练，训练期间与训练结束后均只在 `val.txt` 验证、选 checkpoint 和参数。后续实验不运行 `test.txt`。具体诊断与重训顺序见 [Val 实验流程](docs/VAL_WORKFLOW.md)。
