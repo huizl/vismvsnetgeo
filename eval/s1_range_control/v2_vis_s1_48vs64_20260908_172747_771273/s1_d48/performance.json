@@ -1,0 +1,29 @@
+{
+  "model_type": "v2_vis",
+  "checkpoint": "/home/disk_10T/lzh/triple/vismvsnetgeo/checkpoints/v2/v2_vis_view3_seed1/best_2mm.ckpt",
+  "stage1_dnum": 48,
+  "stage1_iscale": 4,
+  "stage2_dnum": 32,
+  "stage3_dnum": 16,
+  "batch_size": 4,
+  "evaluated_samples": 882,
+  "evaluation_seconds": 153.43959939712659,
+  "timed_forward_seconds": 61.670830296352506,
+  "timed_forward_images": 878,
+  "timed_forward_batches": 220,
+  "excluded_warmup_batches": 1,
+  "forward_ms_per_image": 70.24012562226937,
+  "torch_version": "2.5.1+cu121",
+  "cuda_version": "12.1",
+  "devices": [
+    {
+      "id": 0,
+      "name": "NVIDIA RTX A6000",
+      "peak_allocated_bytes": 7984029184,
+      "peak_reserved_bytes": 9590276096
+    }
+  ],
+  "timing_scope": "synchronized forward only, excluding first batch; includes actual forwarded images even with max_samples",
+  "memory_scope": "peak allocation during evaluation, including model and diagnostic buffers; not inference-only memory",
+  "evaluation_scope": "data iteration, forward, geometry, diagnostics and output writing; excludes model/data setup"
+}
