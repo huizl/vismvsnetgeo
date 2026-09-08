@@ -6,6 +6,32 @@ from models.vismvsnet_oa import VisMVSModel
 
 
 class FullMethodForwardTest(unittest.TestCase):
+    def test_s1_64_loads_48_weights_and_only_extends_coarse_hypothesis_support(self):
+        old_threads = torch.get_num_threads()
+        torch.set_num_threads(1)
+        try:
+            baseline = VisMVSModel().eval()
+            extended = VisMVSModel(stage1_depth_num=64).eval()
+            extended.load_state_dict(baseline.state_dict(), strict=True)
+            images = torch.randn(1, 2, 3, 64, 64)
+            projections = torch.eye(4).view(1, 1, 4, 4).repeat(1, 2, 1, 1)
+            projections[:, 1, 0, 3] = .5
+            original = 425. + 2.65 * torch.arange(192).view(1, -1)
+            with torch.no_grad():
+                a, _, _ = baseline(images, projections, original)
+                b, depth, _ = extended(images, projections, original)
+            self.assertEqual([x[2].shape[1] for x in b], [64, 32, 16])
+            torch.testing.assert_close(a[0][2], b[0][2][:, :48], atol=0, rtol=0)
+            step = original[:, 1] - original[:, 0]
+            torch.testing.assert_close(b[0][2][:, -1] - a[0][2][:, -1], step * 64)
+            for stage, scale in ((1, 2), (2, 1)):
+                torch.testing.assert_close(b[stage][2][:, 1:] - b[stage][2][:, :-1],
+                                           (step*scale).view(1, 1, 1, 1).expand_as(b[stage][2][:, 1:]),
+                                           atol=1e-4, rtol=1e-5)
+            self.assertTrue(torch.isfinite(depth).all())
+        finally:
+            torch.set_num_threads(old_threads)
+
     def test_m3_unclipped_scale_one_matches_baseline_with_identical_weights(self):
         torch.manual_seed(19)
         settings = dict(stage1_depth_num=8, stage2_depth_num=8, stage3_depth_num=8,

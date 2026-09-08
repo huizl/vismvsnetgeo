@@ -8,8 +8,10 @@ this script.
 
 import argparse
 import csv
+import json
 import os
 import sys
+import time
 
 import cv2
 import numpy as np
@@ -496,6 +498,9 @@ def main():
     testlist_path = os.path.abspath(args.testlist)
     output_dir = os.path.abspath(args.outdir)
     variant_metadata = {
+        "stage1_dnum": args.stage1_dnum, "stage1_iscale": args.stage1_iscale,
+        "stage2_dnum": args.stage2_dnum, "stage2_iscale": args.stage2_iscale,
+        "stage3_dnum": args.stage3_dnum, "stage3_iscale": args.stage3_iscale,
         "ablation_code": variant.code,
         "factor_m1_hypothesis_fusion": int(variant.hypothesis_fusion),
         "factor_m2_visibility_modeling": int(variant.visibility_modeling),
@@ -514,6 +519,14 @@ def main():
     evaluated_samples = 0
     previous_geometry_key = None
     cached_geometry = None
+    device_ids = model.device_ids
+    for device_id in device_ids:
+        torch.cuda.synchronize(device_id)
+        torch.cuda.reset_peak_memory_stats(device_id)
+    evaluation_started = time.perf_counter()
+    forward_seconds = 0.0
+    forward_images = 0
+    forward_batches = 0
 
     print("Evaluating {} ({}): samples={}, eval_views={}, region_views={}, light={}".format(
         label, args.model_type, len(dataset), args.eval_nviews, args.region_nviews,
@@ -527,9 +540,21 @@ def main():
                 break
 
             sample_cuda = to_cuda(sample)
+            for device_id in device_ids:
+                torch.cuda.synchronize(device_id)
+            forward_started = time.perf_counter()
             outputs, _, _ = model(
                 sample_cuda["imgs"], sample_cuda["proj_matrices"],
                 sample_cuda["depth_values"])
+            for device_id in device_ids:
+                torch.cuda.synchronize(device_id)
+            elapsed = time.perf_counter() - forward_started
+            # Exclude the first forward from throughput (cuDNN warmup), but
+            # include it in peak evaluation memory and wall-clock duration.
+            if batch_index > 0:
+                forward_seconds += elapsed
+                forward_images += int(sample_cuda["imgs"].shape[0])
+                forward_batches += 1
             depth_gt_tensor = sample_cuda["depth"]
             depth_est_full = F.interpolate(
                 outputs[-1][0].unsqueeze(1), size=depth_gt_tensor.shape[-2:],
@@ -685,6 +710,8 @@ def main():
         })
 
     common_fields = [
+        "stage1_dnum", "stage1_iscale", "stage2_dnum", "stage2_iscale",
+        "stage3_dnum", "stage3_iscale",
         "label", "model_type", "ablation_code",
         "factor_m1_hypothesis_fusion", "factor_m2_visibility_modeling",
         "factor_m3_hybrid_sampling", "checkpoint", "testlist",
@@ -709,6 +736,8 @@ def main():
         from tools.failure_diagnostics import summarize_origins, origin_report
         origin_summary = summarize_origins(origin_rows)
         origin_metadata = {"model_type": args.model_type, "checkpoint": checkpoint_path,
+                           "stage1_dnum": args.stage1_dnum, "stage1_iscale": args.stage1_iscale,
+                           "stage2_dnum": args.stage2_dnum, "stage3_dnum": args.stage3_dnum,
                            "testlist": testlist_path,
                            "alignment": "nearest_stage_to_gt",
                            "error_scope": "s3_nearest_to_gt"}
@@ -724,6 +753,8 @@ def main():
         from tools.failure_diagnostics import summarize as summarize_failures, report
         failure_summary = summarize_failures(failure_rows)
         metadata = {"model_type": args.model_type, "checkpoint": checkpoint_path,
+                    "stage1_dnum": args.stage1_dnum, "stage1_iscale": args.stage1_iscale,
+                    "stage2_dnum": args.stage2_dnum, "stage3_dnum": args.stage3_dnum,
                     "testlist": testlist_path}
         failure_rows = [{**metadata, **row} for row in failure_rows]
         failure_summary = [{**metadata, **row} for row in failure_summary]
@@ -734,6 +765,26 @@ def main():
         with open(os.path.join(output_dir, "failure_report.md"), "w", encoding="utf-8") as stream:
             stream.write(report(failure_summary, metadata))
 
+    performance = {
+        "model_type": args.model_type, "checkpoint": checkpoint_path,
+        "stage1_dnum": args.stage1_dnum, "stage1_iscale": args.stage1_iscale,
+        "stage2_dnum": args.stage2_dnum, "stage3_dnum": args.stage3_dnum,
+        "batch_size": args.batch_size, "evaluated_samples": evaluated_samples,
+        "evaluation_seconds": time.perf_counter() - evaluation_started,
+        "timed_forward_seconds": forward_seconds, "timed_forward_images": forward_images,
+        "timed_forward_batches": forward_batches, "excluded_warmup_batches": 1,
+        "forward_ms_per_image": 1000 * forward_seconds / forward_images if forward_images else None,
+        "torch_version": torch.__version__, "cuda_version": torch.version.cuda,
+        "devices": [{"id": device_id, "name": torch.cuda.get_device_name(device_id),
+                     "peak_allocated_bytes": torch.cuda.max_memory_allocated(device_id),
+                     "peak_reserved_bytes": torch.cuda.max_memory_reserved(device_id)}
+                    for device_id in device_ids],
+        "timing_scope": "synchronized forward only, excluding first batch; includes actual forwarded images even with max_samples",
+        "memory_scope": "peak allocation during evaluation, including model and diagnostic buffers; not inference-only memory",
+        "evaluation_scope": "data iteration, forward, geometry, diagnostics and output writing; excludes model/data setup",
+    }
+    with open(os.path.join(output_dir, "performance.json"), "w", encoding="utf-8") as stream:
+        json.dump(performance, stream, indent=2)
     print_summary(label, summary_rows)
     print("\nSaved per-image metrics:", per_image_file)
     print("Saved summary metrics:", summary_file)

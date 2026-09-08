@@ -1,6 +1,48 @@
 # 下一次只运行基线范围失效诊断
 
-## 当前下一步：范围来源联合诊断
+## 当前要运行：S1 远端覆盖的 48/64 固定权重对照
+
+范围来源分析已经完成。现在实际改变一个因素：S1 假设数由 48 增至 64，起点和间隔 4Δ 不变；S2/S3 仍为 32/16、间隔尺度 2/1。前 48 个假设位置完全保留，S1 远端增加 64Δ。模型已有该能力，无新增网络参数，严格加载同一 checkpoint。
+
+更新服务器上的 `tools/run_baseline_diagnostics.py` 和 `tools/eval_region_metrics_dtu_yao.py`，保留上一轮已同步的 `tools/failure_diagnostics.py`。在原 MVS 环境、vismvsnetgeo 目录执行：
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/run_baseline_diagnostics.py --s1_range_control
+```
+
+该命令依次运行 48、64 两组，强制开启范围来源诊断，并生成差值报告。默认从现有三视图训练的 v2_vis best_2mm 权重开始，两组都是 Val light=3、五视图推理、batch=4。没有训练过程。
+
+输出目录：
+
+```text
+eval/s1_range_control/v2_vis_s1_48vs64_<时间戳>/
+  control_manifest.json
+  comparison.md
+  s1_d48/
+    diagnostic_manifest.json
+    performance.json
+    summary_metrics.csv
+    range_origin_report.md
+    ...
+  s1_d64/
+    diagnostic_manifest.json
+    performance.json
+    summary_metrics.csv
+    range_origin_report.md
+    ...
+```
+
+`comparison.md` 包含两种聚合的 Abs/Acc2 差值、S1 远端越界率、S3 范围外比例、原生 S3 Bad8、同步 CUDA 前向时间、评估耗时与各 GPU 峰值显存。单次顺序计时不视为稳定吞吐；前向计时排除首批，显存统计包括模型和评估诊断缓冲。
+
+脚本核对两组 checkpoint SHA256、源码、实际命令（只允许 S1 深度数和输出路径不同）、逐图区域像素数、batch size。已有非空输出目录会被拒绝，一组失败会停止后续流程并记录失败状态。
+
+显存不足时，两组统一使用 `--batch_size 1`。可先追加 `--dry_run` 预览，或 `--max_samples 8` 检查流程；后者不用于完整 Val 结论。单独运行 64 组也可使用 `--stage1_dnum 64 --range_origin`，但耗时和显存应与本次新测的 48 组比较，不能从旧结果猜测成本。
+
+这次 S1 平面数增加约 33.3%，所以是覆盖干预，不是等预算的新结构。先判断覆盖改善是否同时改善交集/遮挡/边界 Abs 和 Bad8，再决定后续 S1→S2 候选传递原型。运行后提供根目录 `comparison.md` 和两组结果目录即可。
+
+本地已验证 48/64 权重严格兼容、完整 CPU 前向、前 48 个假设不变、S2/S3 数量和间隔不变；服务器上的真实 CUDA/DTU 结果尚待运行。
+
+## 已完成的前一步：范围来源联合诊断
 
 首轮结果已确认范围外大误差占主导，但 S1 初始范围也存在漏覆盖。现在用同一个 checkpoint，在同一 GT 网格拆分初始覆盖、实际采样端点和后续级联丢失。仍只更新下文列出的三个工具文件，不改模型。
 

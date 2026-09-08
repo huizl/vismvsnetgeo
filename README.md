@@ -1,6 +1,6 @@
 # Vis-MVSNetGeo
 
-下一次操作见 [基线范围失效诊断](docs/NEXT_RUN.md)：同步三个评估文件后，在服务器执行 `CUDA_VISIBLE_DEVICES=0 python tools/run_baseline_diagnostics.py`。使用既有 v2_vis 权重，只做 Val 推理和范围内外误差统计。
+下一次操作见 [S1 远端覆盖对照](docs/NEXT_RUN.md)：更新评估和运行入口后，在服务器执行 `CUDA_VISIBLE_DEVICES=0 python tools/run_baseline_diagnostics.py --s1_range_control`。使用相同 v2_vis 权重依次比较 S1=48/64，保留原间隔及 S2/S3 配置，自动输出精度、覆盖和运行成本差值。这是固定权重覆盖干预，不是等预算新结构。
 
 2026-09-08：当前研究入口为 [从原方法局限出发的改进路线](docs/LIMITATION_DRIVEN_PLAN.md) 和 [v2 现有 Val 结果联合审计](docs/V2_RESULT_AUDIT.md)。已有三视图训练的 v2 基线与三个单模块结果；M1 改善较小且逐 scan 不一致，M2 该轮 Abs 退化，M3 存在 Acc2 与边界 Abs 的权衡。下一步先诊断融合证据与级联候选丢失，不预设三个模块均有效。以下训练命令及历代模块说明用于复现，不能将不同版本的 M1/M2/M3 语义混用。
 

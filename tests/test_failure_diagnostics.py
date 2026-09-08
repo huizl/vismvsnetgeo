@@ -1,16 +1,86 @@
 import unittest
+import csv
+import json
+import tempfile
 from types import SimpleNamespace
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
 from tools.failure_diagnostics import (
     measure_stage, summarize, report, measure_origins, summarize_origins, origin_report,
 )
-from tools.run_baseline_diagnostics import build_command
+from tools.run_baseline_diagnostics import build_command, compare_control, run_diagnostic, main
 
 
 class FailureDiagnosticsTest(unittest.TestCase):
+    def test_control_stops_after_first_failure_and_records_status(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "control"
+            with patch("sys.argv", ["runner", "--s1_range_control", "--outdir", str(output)]), \
+                    patch("tools.run_baseline_diagnostics.run_diagnostic", side_effect=RuntimeError("fixture failure")) as run:
+                with self.assertRaisesRegex(RuntimeError, "fixture failure"):
+                    main()
+            self.assertEqual(run.call_count, 1)
+            saved = json.loads((output / "control_manifest.json").read_text())
+            self.assertEqual(saved["status"], "failed")
+
+    def test_existing_output_is_preserved(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            checkpoint = root / "model.ckpt"
+            checkpoint.write_bytes(b"fixture")
+            output = root / "output"
+            output.mkdir()
+            marker = output / "keep.txt"
+            marker.write_text("existing")
+            args = SimpleNamespace(checkpoint=checkpoint, datapath=root, batch_size=4,
+                                   num_workers=0, max_samples=None, stage1_dnum=64,
+                                   range_origin=True, dry_run=False)
+            with self.assertRaisesRegex(ValueError, "new or empty"):
+                run_diagnostic(args, output)
+            self.assertEqual(marker.read_text(), "existing")
+
+    def test_s1_control_changes_only_count_in_model_arguments(self):
+        args = SimpleNamespace(checkpoint=Path("baseline.ckpt"), datapath=Path("data"),
+                               batch_size=4, num_workers=0, max_samples=None, stage1_dnum=48)
+        a = build_command(args, Path("output"))
+        args.stage1_dnum = 64
+        b = build_command(args, Path("output"))
+        self.assertEqual([(x, y) for x, y in zip(a, b) if x != y], [("48", "64")])
+
+    def test_control_comparison_uses_deltas_and_rejects_unmatched_pixels(self):
+        def write_csv(path, rows):
+            with path.open("w", newline="", encoding="utf-8") as stream:
+                writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+                writer.writeheader(); writer.writerows(rows)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for number in (48, 64):
+                p = root / f"s1_d{number}"
+                p.mkdir()
+                args = SimpleNamespace(checkpoint=Path("baseline.ckpt"), datapath=Path("data"),
+                                       batch_size=4, num_workers=0, max_samples=None, stage1_dnum=number)
+                manifest = dict(status="completed", checkpoint_sha256="same", source_sha256={},
+                                scope="full_val", max_samples=None, stage1_dnum=number,
+                                command=build_command(args, p))
+                (p / "diagnostic_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+                write_csv(p / "all_metrics.csv", [dict(scan="scan3", view=0, light=3, region="full", pixels=10)])
+                write_csv(p / "summary_metrics.csv", [dict(aggregation="pixel_weighted", region="full", abs=5 if number==48 else 4, acc2=.8 if number==48 else .85)])
+                write_csv(p / "range_origin_summary.csv", [dict(region="full", comparison=c, group=g, pixel_fraction=v)
+                          for c,g,v in [("direction_s1","above",.1),("s1_to_s3","in_out",.05),("s1_to_s3","out_out",.02)]])
+                write_csv(p / "failure_summary.csv", [dict(stage=3,region="full",group="all",bad8=.1)])
+                (p / "performance.json").write_text(json.dumps(dict(batch_size=4,forward_ms_per_image=None,
+                    evaluation_seconds=10,devices=[])), encoding="utf-8")
+            compare_control(root)
+            result = (root / "comparison.md").read_text(encoding="utf-8")
+            self.assertIn("-1.0000", result)
+            self.assertIn("+5.000", result)
+            write_csv(root / "s1_d64/all_metrics.csv", [dict(scan="scan3",view=0,light=3,region="full",pixels=11)])
+            with self.assertRaisesRegex(ValueError, "pixel counts"):
+                compare_control(root)
+
     def test_interval_exclusion_and_sampling_distance_are_different(self):
         # GT=3 lies between candidates [2,4] and can be regressed exactly.
         # GT=10 is outside that interval and forces at least 6 mm error.
