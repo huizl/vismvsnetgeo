@@ -80,6 +80,8 @@ def parse_args():
                         help="Optional debug limit. One sample is one scan/ref/light tuple.")
     parser.add_argument("--print_freq", type=int, default=50)
     parser.add_argument("--seed", type=int, default=1)
+    parser.add_argument("--failure_diagnostics", action="store_true",
+                        help="Also write native-stage in/out-of-range error accounting.")
 
     parser.add_argument("--boundary_pct", type=float, default=10.0,
                         help="Top percentage of GT depth-gradient pixels.")
@@ -485,6 +487,7 @@ def main():
     }
 
     per_image_rows = []
+    failure_rows = []
     pixel_accumulator = {}
     image_accumulator = {}
     evaluated_samples = 0
@@ -512,6 +515,17 @@ def main():
                 mode="bilinear", align_corners=False).squeeze(1)
             range_tensors, range_width_tensors = full_resolution_range_diagnostics(
                 outputs, depth_gt_tensor, sample_cuda["depth_values"])
+            if args.failure_diagnostics:
+                from tools.failure_diagnostics import measure_stage
+                native_stages = []
+                for stage_output in outputs:
+                    stage_depth, _, stage_hypotheses = stage_output
+                    native_gt = F.interpolate(
+                        depth_gt_tensor.unsqueeze(1), size=stage_depth.shape[-2:],
+                        mode="nearest").squeeze(1)
+                    native_stages.append((stage_depth.cpu().numpy(),
+                                          native_gt.cpu().numpy(),
+                                          stage_hypotheses.cpu().numpy()))
 
             for batch_item in range(depth_gt_tensor.shape[0]):
                 sample_index = first_sample_index + batch_item
@@ -556,6 +570,22 @@ def main():
                     "large_disp_and_occluded": large_disparity & occluded_any,
                     "boundary_and_occluded": boundary & occluded_any,
                 }
+
+                if args.failure_diagnostics:
+                    if not np.isfinite(depth_est[gt_mask]).all():
+                        raise ValueError("Nonfinite final depth in GT-valid pixels")
+                    for stage_index, (native_pred, native_gt, native_hyp) in enumerate(native_stages, 1):
+                        height, width = native_pred.shape[-2:]
+                        native_regions = {
+                            key: cv2.resize(value.astype(np.uint8), (width, height),
+                                            interpolation=cv2.INTER_NEAREST).astype(bool)
+                            for key, value in region_masks.items()
+                        }
+                        measured = measure_stage(
+                            native_pred[batch_item], native_gt[batch_item],
+                            native_hyp[batch_item], native_regions, stage_index)
+                        failure_rows.extend({"scan": scan, "view": int(ref_view),
+                                             "light": int(light), **row} for row in measured)
 
                 for region, region_mask in region_masks.items():
                     result = metrics(
@@ -637,6 +667,19 @@ def main():
     summary_file = os.path.join(output_dir, "summary_metrics.csv")
     write_csv(per_image_file, per_image_fields, per_image_rows)
     write_csv(summary_file, summary_fields, summary_rows)
+    if args.failure_diagnostics:
+        from tools.failure_diagnostics import summarize as summarize_failures, report
+        failure_summary = summarize_failures(failure_rows)
+        metadata = {"model_type": args.model_type, "checkpoint": checkpoint_path,
+                    "testlist": testlist_path}
+        failure_rows = [{**metadata, **row} for row in failure_rows]
+        failure_summary = [{**metadata, **row} for row in failure_summary]
+        write_csv(os.path.join(output_dir, "failure_all.csv"),
+                  list(failure_rows[0]), failure_rows)
+        write_csv(os.path.join(output_dir, "failure_summary.csv"),
+                  list(failure_summary[0]), failure_summary)
+        with open(os.path.join(output_dir, "failure_report.md"), "w", encoding="utf-8") as stream:
+            stream.write(report(failure_summary, metadata))
 
     print_summary(label, summary_rows)
     print("\nSaved per-image metrics:", per_image_file)

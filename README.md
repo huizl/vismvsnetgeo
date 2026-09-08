@@ -1,14 +1,18 @@
 # Vis-MVSNetGeo
 
-当前优先方案为 [v2 三模块候选](docs/METHOD_V2.md)：投影有效性约束的假设级融合、仅训练期可见性监督、参考特征引导的级联中心上采样。使用独立的 `v2_*` 模型名，先验证基线与三个单模块，再决定组合。下文旧八组及其 checkpoint 定义保留用于复现历史实验。
+下一次操作见 [基线范围失效诊断](docs/NEXT_RUN.md)：同步三个评估文件后，在服务器执行 `CUDA_VISIBLE_DEVICES=0 python tools/run_baseline_diagnostics.py`。使用既有 v2_vis 权重，只做 Val 推理和范围内外误差统计。
+
+2026-09-08：当前研究入口为 [从原方法局限出发的改进路线](docs/LIMITATION_DRIVEN_PLAN.md) 和 [v2 现有 Val 结果联合审计](docs/V2_RESULT_AUDIT.md)。已有三视图训练的 v2 基线与三个单模块结果；M1 改善较小且逐 scan 不一致，M2 该轮 Abs 退化，M3 存在 Acc2 与边界 Abs 的权衡。下一步先诊断融合证据与级联候选丢失，不预设三个模块均有效。以下训练命令及历代模块说明用于复现，不能将不同版本的 M1/M2/M3 语义混用。
+
+已有 [v2 三模块候选](docs/METHOD_V2.md)：投影有效性约束的假设级融合、仅训练期可见性监督、参考特征引导的级联中心上采样。使用独立的 `v2_*` 模型名。下文训练入口、旧八组及其 checkpoint 定义保留用于复现历史实验；下一步实验选择见上方局限驱动路线。
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 python tools/train_v2_val.py --train_nviews 5 --seed 1
 ```
 
-该命令依次从头训练 `v2_vis v2_m1 v2_m2 v2_m3`，每组训练完成后自动在 `val.txt` 上评估 `best_2mm.ckpt`，输出到 `eval/v2_val_view5_seed1/`。`--dry_run` 可预览命令，`--models` 可指定单组或组合。三个模块当前属于候选，M1/M3 尚无 v2 Val 结果，不能预先视为正向改进。
+该命令依次从头训练 `v2_vis v2_m1 v2_m2 v2_m3`，每组训练完成后自动在 `val.txt` 上评估 `best_2mm.ckpt`，输出到 `eval/v2_val_view5_seed1/`。`--dry_run` 可预览命令，`--models` 可指定单组或组合。三个模块当前属于候选，已有三视图训练结果见联合审计，不能预先视为稳定的正向改进。
 
-本目录用于研究 Vis-MVSNet 在大视差、遮挡和深度边界区域的改进。当前正式方法由三个独立模块组成，不再使用旧的 OA/Range 因子定义。
+本目录用于研究 Vis-MVSNet 在大视差、遮挡和深度边界区域的改进。下方为早期 M1/M2/M3 三模块定义，与 v2 候选的语义不同；更早的 OA/Range 因子仅用于历史实验。
 
 当前实验流程：`train.txt` 训练，训练期间与训练结束后均只在 `val.txt` 验证、选 checkpoint 和参数。后续实验不运行 `test.txt`。具体诊断与重训顺序见 [Val 实验流程](docs/VAL_WORKFLOW.md)。
 
