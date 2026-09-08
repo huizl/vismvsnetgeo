@@ -1,5 +1,25 @@
 # 下一次只运行基线范围失效诊断
 
+## 当前下一步：范围来源联合诊断
+
+首轮结果已确认范围外大误差占主导，但 S1 初始范围也存在漏覆盖。现在用同一个 checkpoint，在同一 GT 网格拆分初始覆盖、实际采样端点和后续级联丢失。仍只更新下文列出的三个工具文件，不改模型。
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/run_baseline_diagnostics.py --range_origin
+```
+
+默认新建时间戳目录；原生分辨率统计照常保留，另增：
+
+- `range_origin_report.md`：先看 S1 内→S3 外与 S1 外→S3 外分别贡献多少误差，再定位 S1→S2/S2→S3。
+- `range_origin_summary.csv`：各联合分组的像素数、S3 误差贡献和平均/最大越界距离。
+- `range_origin_all.csv`：逐图/区域明细，用于定位 scan37、scan28、scan82 等场景。
+
+同时记录数据原始区间→S1 实际区间的联合覆盖，以及初始区间近端/远端越界。运行后先发 `range_origin_report.md`、`range_origin_summary.csv`、`summary_metrics.csv`。
+
+这套统计固定原始 GT/区域网格，通过 nearest 选择各阶段区间端点与 S3 预测；不混合相邻深度。其误差口径为 `s3_nearest_to_gt`，独立于既有原生阶段统计和常规 bilinear 评估，不将不同口径的 Abs 混排。相邻阶段丢失组可能重叠，不能将误差贡献直接相加。
+
+运行前可追加 `--dry_run` 查看命令，或先追加 `--max_samples 8` 检查流程。下面保留首轮基础诊断的说明。
+
 目的：分清当前大误差与搜索范围排除 GT 的关系，以及范围内还剩多少匹配误差。使用既有 v2_vis checkpoint，不训练新模型、不改融合/采样，不进行 GT oracle 干预。
 
 ## 同步到服务器

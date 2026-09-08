@@ -29,6 +29,7 @@ def build_command(args, output):
             "--boundary_pct", "10", "--large_disp_pct", "80",
             "--occ_abs_tol", "2.0", "--occ_rel_tol", "0.01", "--seed", "1",
             "--failure_diagnostics",
+            *(["--range_origin_diagnostics"] if getattr(args, "range_origin", False) else []),
             *(["--max_samples", str(args.max_samples)] if args.max_samples is not None else [])]
 
 
@@ -43,6 +44,8 @@ def main():
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--max_samples", type=int)
     parser.add_argument("--dry_run", action="store_true")
+    parser.add_argument("--range_origin", action="store_true",
+                        help="Also track initial coverage and later losses on the same GT grid.")
     args = parser.parse_args()
     if args.batch_size < 1 or args.num_workers < 0 or (args.max_samples is not None and args.max_samples < 1):
         parser.error("batch_size/max_samples must be positive; num_workers must be nonnegative")
@@ -68,6 +71,7 @@ def main():
                ROOT / "lists/dtu/val.txt"]
     manifest = {"status": "running", "started_utc": datetime.now(timezone.utc).isoformat(),
                 "command": command, "max_samples": args.max_samples,
+                "range_origin_diagnostics": args.range_origin,
                 "scope": "full_val" if args.max_samples is None else "smoke_only",
                 "source_sha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
                                   for p in sources}}
@@ -97,6 +101,8 @@ def main():
         manifest["finished_utc"] = datetime.now(timezone.utc).isoformat()
         save()
     print(f"Read: {output / 'failure_report.md'}", flush=True)
+    if args.range_origin:
+        print(f"Read: {output / 'range_origin_report.md'}", flush=True)
 
 
 if __name__ == "__main__":

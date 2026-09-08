@@ -110,3 +110,132 @@ def report(rows, metadata):
               "- 空组的均值/零总误差的占比写为 nan，不作为零误差；CSV 的 bad8 使用严格 >8 mm。",
               "", "先检查原 summary_metrics.csv 是否接近既有基线，确认评估条件可比，再根据本表选择一个最小改动。", ""]
     return "\n".join(lines)
+
+
+ORIGIN_TOTALS = ("pixels", "region_pixels", "abs_sum", "region_abs_sum",
+                 "gap_sum", "s3_gap_sum")
+
+
+def origin_ratios(row):
+    def divide(a, b):
+        return float(a / b) if b else float("nan")
+    return {
+        "pixel_fraction": divide(row["pixels"], row["region_pixels"]),
+        "abs": divide(row["abs_sum"], row["pixels"]),
+        "error_share": divide(row["abs_sum"], row["region_abs_sum"]),
+        "gap_mean": divide(row["gap_sum"], row["pixels"]),
+        "s3_gap_mean": divide(row["s3_gap_sum"], row["pixels"]),
+    }
+
+
+def measure_origins(prediction, gt, intervals, regions):
+    """Compare intervals on ONE GT grid, using nearest-selected stage pixels.
+
+    intervals contains (lower, upper) for original/s1/s2/s3, each scalar or H,W.
+    All error sums use the same nearest-selected S3 prediction. Thus each
+    transition is a true partition of the chosen common-grid pixel set.
+    gap_* refers to the target interval of the comparison, or the named stage
+    for directional groups. It is not a causal attribution of prediction error.
+    """
+    prediction, gt = np.asarray(prediction, dtype=np.float64), np.asarray(gt, dtype=np.float64)
+    if gt.ndim != 2 or prediction.shape != gt.shape:
+        raise ValueError("prediction and GT must share the common H,W grid")
+    finite = np.isfinite(prediction) & np.isfinite(gt)
+    masks, gaps, bounds = {}, {}, {}
+    for name in ("original", "s1", "s2", "s3"):
+        lo, hi = [np.broadcast_to(np.asarray(x, dtype=np.float64), gt.shape) for x in intervals[name]]
+        finite &= np.isfinite(lo) & np.isfinite(hi) & (lo <= hi)
+        masks[name] = (gt >= lo) & (gt <= hi)
+        gaps[name] = np.maximum(np.maximum(lo - gt, gt - hi), 0)
+        bounds[name] = (lo, hi)
+    error = np.abs(prediction - gt)
+    comparisons = []
+    for source, target in (("original", "s1"), ("s1", "s2"), ("s2", "s3"), ("s1", "s3")):
+        a, b = masks[source], masks[target]
+        comparisons.append((f"{source}_to_{target}", target, {
+            "all": np.ones(gt.shape, bool), "in_in": a & b,
+            "in_out": a & ~b, "out_in": ~a & b, "out_out": ~a & ~b}))
+    for name in ("original", "s1"):
+        lo, hi = bounds[name]
+        comparisons.append((f"direction_{name}", name, {
+            "all": np.ones(gt.shape, bool), "below": gt < lo,
+            "inside": masks[name], "above": gt > hi}))
+    rows = []
+    for region, region_mask in regions.items():
+        region_mask = np.asarray(region_mask, dtype=bool)
+        if region_mask.shape != gt.shape:
+            raise ValueError("regions must share the common GT grid")
+        if np.any(region_mask & ~finite):
+            raise ValueError("Invalid values or reversed interval in a valid region")
+        for comparison, target, selections in comparisons:
+            for group, selected in selections.items():
+                mask = region_mask & selected
+                row = {
+                    "region": region, "comparison": comparison, "group": group,
+                    "pixels": int(mask.sum()), "region_pixels": int(region_mask.sum()),
+                    "abs_sum": float(error[mask].sum()),
+                    "region_abs_sum": float(error[region_mask].sum()),
+                    "gap_sum": float(gaps[target][mask].sum()),
+                    "s3_gap_sum": float(gaps["s3"][mask].sum()),
+                    "gap_max": float(gaps[target][mask].max()) if mask.any() else float("nan"),
+                }
+                rows.append({**row, **origin_ratios(row)})
+    return rows
+
+
+def summarize_origins(rows):
+    groups = defaultdict(lambda: {"images": 0, **{name: 0 for name in ORIGIN_TOTALS},
+                                   "gap_max": float("nan")})
+    for row in rows:
+        result = groups[row["region"], row["comparison"], row["group"]]
+        result["images"] += int(row["region_pixels"] > 0)
+        for name in ORIGIN_TOTALS:
+            result[name] += row[name]
+        if np.isfinite(row["gap_max"]):
+            result["gap_max"] = (max(result["gap_max"], row["gap_max"])
+                                 if np.isfinite(result["gap_max"]) else row["gap_max"])
+    return [{"region": region, "comparison": comparison, "group": group,
+             **values, **origin_ratios(values)}
+            for (region, comparison, group), values in groups.items()]
+
+
+def origin_report(rows, metadata):
+    indexed = {(r["region"], r["comparison"], r["group"]): r for r in rows}
+    regions = list(dict.fromkeys(r["region"] for r in rows))
+    lines = ["# 同一 GT 网格的搜索范围来源诊断", "",
+             f"模型：{metadata['model_type']}；checkpoint：{metadata['checkpoint']}。",
+             "GT 和区域掩码固定；各阶段区间端点与 S3 深度用 nearest 选择到 GT 网格，不混合邻居深度。",
+             "误差是该 common-grid S3 预测的误差，与原生阶段/常规 bilinear 评估分开命名。",
+             "覆盖转移是这个固定对齐规则下的像素联合统计，不等于已证明的因果来源。", "",
+             "## 主要分解：初始漏覆盖还是后续丢失", "",
+             "所有占比的分母分别为该区域全部像素或 S3 绝对误差总和；各区域相互重叠，不能跨区域相加。", "",
+             "| 区域 | S1内→S3外 像素% | 其S3误差贡献% | S1外→S3外 像素% | 其S3误差贡献% | S1外→S3内 像素% |",
+             "| --- | ---: | ---: | ---: | ---: | ---: |"]
+    for region in regions:
+        lost = indexed[region, "s1_to_s3", "in_out"]
+        persistent = indexed[region, "s1_to_s3", "out_out"]
+        recovered = indexed[region, "s1_to_s3", "out_in"]
+        lines.append(f"| {region} | {100*lost['pixel_fraction']:.3f} | {100*lost['error_share']:.3f} | {100*persistent['pixel_fraction']:.3f} | {100*persistent['error_share']:.3f} | {100*recovered['pixel_fraction']:.3f} |")
+    lines += ["", "## 定位实际采样端点和级联阶段", "",
+              "in_out 表示源区间覆盖 GT、目标区间未覆盖 GT。其 gap 是 GT 到目标区间的距离。", "",
+              "| 区域 | 比较 | in_out像素% | 其S3误差贡献% | 平均越界mm |",
+              "| --- | --- | ---: | ---: | ---: |"]
+    for region in regions:
+        for comparison in ("original_to_s1", "s1_to_s2", "s2_to_s3"):
+            row = indexed[region, comparison, "in_out"]
+            lines.append(f"| {region} | {comparison} | {100*row['pixel_fraction']:.3f} | {100*row['error_share']:.3f} | {row['gap_mean']:.3f} |")
+    lines += ["", "## 初始区间越界方向", "",
+              "| 区域 | 区间 | 方向 | 像素% | 平均越界mm | 最大越界mm |",
+              "| --- | --- | --- | ---: | ---: | ---: |"]
+    for region in regions:
+        for name in ("original", "s1"):
+            for direction in ("below", "above"):
+                row = indexed[region, f"direction_{name}", direction]
+                lines.append(f"| {region} | {name} | {direction} | {100*row['pixel_fraction']:.3f} | {row['gap_mean']:.3f} | {row['gap_max']:.3f} |")
+    lines += ["", "决策：", "",
+              "- original 已漏覆盖：先核查相机/深度单位/掩码和初始范围规则。不能按每张 Val GT 动态扩展正式推理范围。",
+              "- original 覆盖而 S1 漏覆盖：优先检查实际采样端点。",
+              "- S1 内→S3 外误差贡献显著：优先做候选保留/恢复改动，并由 S1→S2、S2→S3 定位阶段。",
+              "- 相邻阶段的 in_out 组可能重叠或涉及后来找回的像素，其误差贡献不能直接相加。",
+              "- 原始区间是数据实际提供的 depth_values 的 min/max，并非从 GT 推导。空组均值为 nan。", ""]
+    return "\n".join(lines)

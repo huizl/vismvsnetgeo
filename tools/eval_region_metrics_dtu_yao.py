@@ -82,6 +82,8 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--failure_diagnostics", action="store_true",
                         help="Also write native-stage in/out-of-range error accounting.")
+    parser.add_argument("--range_origin_diagnostics", action="store_true",
+                        help="Track original/S1/S2/S3 coverage on one nearest-aligned GT grid.")
 
     parser.add_argument("--boundary_pct", type=float, default=10.0,
                         help="Top percentage of GT depth-gradient pixels.")
@@ -340,6 +342,24 @@ def full_resolution_range_diagnostics(
     return range_masks, range_widths
 
 
+def common_grid_intervals(stage_outputs, original_depth_values, target_size):
+    """Select actual stage intervals on one GT grid without blending surfaces."""
+    def align(value):
+        if value.dim() == 1:
+            return value[:, None, None].expand(-1, *target_size)
+        return F.interpolate(value.unsqueeze(1), size=target_size,
+                             mode="nearest").squeeze(1)
+
+    intervals = {"original": (align(original_depth_values.amin(dim=1)),
+                              align(original_depth_values.amax(dim=1)))}
+    for index, output in enumerate(stage_outputs, 1):
+        hypotheses = output[2]
+        intervals[f"s{index}"] = (align(hypotheses.amin(dim=1)),
+                                    align(hypotheses.amax(dim=1)))
+    prediction = align(stage_outputs[-1][0])
+    return prediction, intervals
+
+
 def metrics(error, mask, range_masks, range_widths):
     pixel_count = int(mask.sum())
     if pixel_count == 0:
@@ -488,6 +508,7 @@ def main():
 
     per_image_rows = []
     failure_rows = []
+    origin_rows = []
     pixel_accumulator = {}
     image_accumulator = {}
     evaluated_samples = 0
@@ -515,6 +536,13 @@ def main():
                 mode="bilinear", align_corners=False).squeeze(1)
             range_tensors, range_width_tensors = full_resolution_range_diagnostics(
                 outputs, depth_gt_tensor, sample_cuda["depth_values"])
+            if args.range_origin_diagnostics:
+                from tools.failure_diagnostics import measure_origins
+                origin_prediction, origin_intervals = common_grid_intervals(
+                    outputs, sample_cuda["depth_values"], depth_gt_tensor.shape[-2:])
+                origin_prediction = origin_prediction.cpu().numpy()
+                origin_intervals = {key: tuple(v.cpu().numpy() for v in bounds)
+                                    for key, bounds in origin_intervals.items()}
             if args.failure_diagnostics:
                 from tools.failure_diagnostics import measure_stage
                 native_stages = []
@@ -570,6 +598,16 @@ def main():
                     "large_disp_and_occluded": large_disparity & occluded_any,
                     "boundary_and_occluded": boundary & occluded_any,
                 }
+
+                if args.range_origin_diagnostics:
+                    if not np.isfinite(depth_est[gt_mask]).all():
+                        raise ValueError("Nonfinite final depth in GT-valid pixels")
+                    measured = measure_origins(
+                        origin_prediction[batch_item], depth_gt,
+                        {key: tuple(v[batch_item] for v in bounds)
+                         for key, bounds in origin_intervals.items()}, region_masks)
+                    origin_rows.extend({"scan": scan, "view": int(ref_view),
+                                        "light": int(light), **row} for row in measured)
 
                 if args.failure_diagnostics:
                     if not np.isfinite(depth_est[gt_mask]).all():
@@ -667,6 +705,21 @@ def main():
     summary_file = os.path.join(output_dir, "summary_metrics.csv")
     write_csv(per_image_file, per_image_fields, per_image_rows)
     write_csv(summary_file, summary_fields, summary_rows)
+    if args.range_origin_diagnostics:
+        from tools.failure_diagnostics import summarize_origins, origin_report
+        origin_summary = summarize_origins(origin_rows)
+        origin_metadata = {"model_type": args.model_type, "checkpoint": checkpoint_path,
+                           "testlist": testlist_path,
+                           "alignment": "nearest_stage_to_gt",
+                           "error_scope": "s3_nearest_to_gt"}
+        origin_rows = [{**origin_metadata, **row} for row in origin_rows]
+        origin_summary = [{**origin_metadata, **row} for row in origin_summary]
+        write_csv(os.path.join(output_dir, "range_origin_all.csv"),
+                  list(origin_rows[0]), origin_rows)
+        write_csv(os.path.join(output_dir, "range_origin_summary.csv"),
+                  list(origin_summary[0]), origin_summary)
+        with open(os.path.join(output_dir, "range_origin_report.md"), "w", encoding="utf-8") as stream:
+            stream.write(origin_report(origin_summary, origin_metadata))
     if args.failure_diagnostics:
         from tools.failure_diagnostics import summarize as summarize_failures, report
         failure_summary = summarize_failures(failure_rows)
