@@ -1,0 +1,50 @@
+[
+  {
+    "scan": "scan62",
+    "view": 45,
+    "light": 3,
+    "reason": "median Base Abs in large_disparity; not selected by gain",
+    "roi": null,
+    "probe": null
+  },
+  {
+    "scan": "scan24",
+    "view": 23,
+    "light": 3,
+    "reason": "median Base Abs in occluded_any; not selected by gain",
+    "roi": null,
+    "probe": null
+  },
+  {
+    "scan": "scan4",
+    "view": 23,
+    "light": 3,
+    "reason": "median Base Abs in large_disp_and_occluded; not selected by gain",
+    "roi": null,
+    "probe": null
+  },
+  {
+    "scan": "scan75",
+    "view": 17,
+    "light": 3,
+    "reason": "90th percentile Base joint-region Abs",
+    "roi": null,
+    "probe": null
+  },
+  {
+    "scan": "scan33",
+    "view": 0,
+    "light": 3,
+    "reason": "largest joint-region regression; failure analysis",
+    "roi": null,
+    "probe": null
+  },
+  {
+    "scan": "scan114",
+    "view": 46,
+    "light": 3,
+    "reason": "median Base Abs in boundary_and_occluded; not selected by gain",
+    "roi": null,
+    "probe": null
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "numdepth": 192,
+  "interval_scale": 1.06,
+  "stage1_dnum": 48,
+  "stage1_iscale": 4,
+  "stage2_dnum": 32,
+  "stage2_iscale": 2,
+  "stage3_dnum": 16,
+  "stage3_iscale": 1,
+  "boundary_pct": 10.0,
+  "large_disp_pct": 80.0,
+  "occ_abs_tol": 2.0,
+  "occ_rel_tol": 0.01
+}

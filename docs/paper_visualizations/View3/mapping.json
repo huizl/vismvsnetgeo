@@ -1,0 +1,50 @@
+[
+  {
+    "model_type": "range",
+    "name": "Base",
+    "analysis_code": "000",
+    "csv_code": "010"
+  },
+  {
+    "model_type": "oa_range",
+    "name": "Base+A",
+    "analysis_code": "100",
+    "csv_code": "110"
+  },
+  {
+    "model_type": "vis",
+    "name": "Base+B",
+    "analysis_code": "010",
+    "csv_code": "000"
+  },
+  {
+    "model_type": "range_hyp",
+    "name": "Base+C",
+    "analysis_code": "001",
+    "csv_code": "011"
+  },
+  {
+    "model_type": "oa",
+    "name": "Base+A+B",
+    "analysis_code": "110",
+    "csv_code": "100"
+  },
+  {
+    "model_type": "oa_full",
+    "name": "Base+A+C",
+    "analysis_code": "101",
+    "csv_code": "111"
+  },
+  {
+    "model_type": "hyp",
+    "name": "Base+B+C",
+    "analysis_code": "011",
+    "csv_code": "001"
+  },
+  {
+    "model_type": "oa_hyp",
+    "name": "Base+A+B+C",
+    "analysis_code": "111",
+    "csv_code": "101"
+  }
+]

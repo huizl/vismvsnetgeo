@@ -10,9 +10,9 @@
 
 ### 1.1 研究背景与问题
 
-多视图立体匹配旨在由多幅已标定图像恢复场景的稠密几何。学习式方法通常将源视图特征依据一组深度假设变换到参考视图，构建并正则化匹配代价体，最终回归参考视图深度。MVSNet [2] 奠定了这一端到端框架，R-MVSNet [9]、Point-MVSNet [10]、CVP-MVSNet [11] 与 CasMVSNet [3] 随后分别从递归正则化、点云细化和由粗到细代价体等方向提高了分辨率与效率。级联结构在较低分辨率上估计粗深度，再围绕前级结果逐步缩小搜索区间，因而能够以有限的候选数量获得较细的深度分辨率。
+多视图立体匹配旨在由多幅已标定图像恢复场景的稠密几何。学习式方法通常将源视图特征依据一组深度假设变换到参考视图，构建并正则化匹配代价体，最终回归参考视图深度。MVSNet [1] 奠定了这一端到端框架，R-MVSNet [2]、Point-MVSNet [3]、CVP-MVSNet [4] 与 CasMVSNet [5] 随后分别从递归正则化、点云细化和由粗到细代价体等方向提高了分辨率与效率。级联结构在较低分辨率上估计粗深度，再围绕前级结果逐步缩小搜索区间，因而能够以有限的候选数量获得较细的深度分辨率。
 
-然而，由粗到细的效率收益伴随着对前级估计的依赖。在大视差条件下，同一三维点在不同视图中的成像位置相距较远，局部外观差异和特征对齐误差随之增大；在复杂遮挡条件下，一部分源视图甚至不存在有效对应。若粗阶段由此产生较大深度偏差，后续局部搜索可能无法覆盖真实深度，错误又会继续影响更高分辨率阶段。Vis-MVSNet [1] 通过成对深度分布的不确定性估计源视图可靠性，有效改善了可见性相关融合，但匹配不确定性仍是对可靠性的间接刻画：相似的不确定性可能来自遮挡、弱纹理、重复纹理或反射。同时，像素级视图权重难以完整表示同一源视图在不同深度假设处的可靠性变化。因此，大视差和复杂遮挡仍可能通过“粗阶段失配—候选范围受限—错误证据聚合”在三级网络中形成连续的误差传播。
+然而，由粗到细的效率收益伴随着对前级估计的依赖。在大视差条件下，同一三维点在不同视图中的成像位置相距较远，局部外观差异和特征对齐误差随之增大；在复杂遮挡条件下，一部分源视图甚至不存在有效对应。若粗阶段由此产生较大深度偏差，后续局部搜索可能无法覆盖真实深度，错误又会继续影响更高分辨率阶段。Vis-MVSNet [6] 通过成对深度分布的不确定性估计源视图可靠性，有效改善了可见性相关融合，但匹配不确定性仍是对可靠性的间接刻画：相似的不确定性可能来自遮挡、弱纹理、重复纹理或反射。同时，像素级视图权重难以完整表示同一源视图在不同深度假设处的可靠性变化。因此，大视差和复杂遮挡仍可能通过“粗阶段失配—候选范围受限—错误证据聚合”在三级网络中形成连续的误差传播。
 
 ### 1.2 本文方法
 
@@ -33,327 +33,253 @@
 
 ### 2.1 基于代价体的多视图深度估计
 
-MVSNet [2] 利用可微单应性变换在参考相机视锥中构建三维代价体，并通过三维卷积完成正则化和深度回归，形成了学习式 MVS 的基本范式。由于完整三维代价体的显存开销随空间与深度分辨率快速增长，R-MVSNet [9] 使用循环单元沿深度方向依次正则化二维代价图，Point-MVSNet [10] 则从粗深度出发在三维点表示上迭代预测残差。CVP-MVSNet [11] 和 CasMVSNet [3] 将匹配过程组织为由粗到细的多尺度结构，在后续阶段围绕前级深度建立局部代价体。这类方法显著降低了高分辨率估计的计算负担，但也使精细阶段的候选空间受到粗阶段预测质量的制约。
+MVSNet [1] 利用可微单应性变换在参考相机视锥中构建三维代价体，并通过三维卷积完成正则化和深度回归，形成了学习式 MVS 的基本范式。由于完整三维代价体的显存开销随空间与深度分辨率快速增长，R-MVSNet [2] 使用循环单元沿深度方向依次正则化二维代价图，Point-MVSNet [3] 则从粗深度出发在三维点表示上迭代预测残差。CVP-MVSNet [4] 和 CasMVSNet [5] 将匹配过程组织为由粗到细的多尺度结构，在后续阶段围绕前级深度建立局部代价体。这类方法显著降低了高分辨率估计的计算负担，但也使精细阶段的候选空间受到粗阶段预测质量的制约。
 
 ### 2.2 可见性建模与多视图聚合
 
-不同源视图对参考像素的有效性会随遮挡、视角和成像条件变化，因而等权聚合容易将错误匹配写入代价体。PVSNet [5] 预测逐像素可见性并据此构建加权代价体；Vis-MVSNet [1] 联合估计成对深度及其不确定性，以不确定性度量匹配可靠性并指导多视图融合。AA-RMVSNet [12] 进一步采用自适应的视图内与视图间聚合，以改善纹理不足和遮挡条件下的重建。上述方法证明了选择性使用源视图信息的重要性，但它们主要从预测可靠性或像素级权重出发。本文一方面通过逐源几何一致性显式监督遮挡关系，另一方面使视图权重随候选深度改变，从监督来源和融合粒度两个层面细化可见性建模。
+不同源视图对参考像素的有效性会随遮挡、视角和成像条件变化，因而等权聚合容易将错误匹配写入代价体。PVSNet [7] 预测逐像素可见性并据此构建加权代价体；Vis-MVSNet [6] 联合估计成对深度及其不确定性，以不确定性度量匹配可靠性并指导多视图融合。AA-RMVSNet [8] 进一步采用自适应的视图内与视图间聚合，以改善纹理不足和遮挡条件下的重建。上述方法证明了选择性使用源视图信息的重要性，但它们主要从预测可靠性或像素级权重出发。本文一方面通过逐源几何一致性显式监督遮挡关系，另一方面使视图权重随候选深度改变，从监督来源和融合粒度两个层面细化可见性建模。
 
 ### 2.3 深度假设搜索与概率建模
 
-候选深度的覆盖范围与离散间隔共同决定代价体能够表达的深度精度。CasMVSNet [3] 在逐级提高空间分辨率的同时缩小搜索区间；UCS-Net [4] 根据前级深度分布的不确定性构建逐像素自适应薄体积。PatchmatchNet [6] 以可学习 PatchMatch 代替规则的全深度代价体，通过初始化、传播和评估迭代更新候选。GBi-Net [14] 将深度估计改写为广义二分搜索，并通过容错区间处理分类错误和越界样本；IterMVS [16] 则在循环隐藏状态中编码像素级深度概率分布并迭代更新。UniMVSNet [15] 从深度表示角度统一分类与回归，以兼顾代价体监督和亚像素估计。这些研究表明，候选空间不只是实现细节，而是影响覆盖能力、离散精度与误差恢复能力的关键因素。本文的自适应范围直接服务于三级结构中的前级误差修正，并与遮挡监督和深度假设感知融合共同优化困难区域。
+候选深度的覆盖范围与离散间隔共同决定代价体能够表达的深度精度。CasMVSNet [5] 在逐级提高空间分辨率的同时缩小搜索区间；UCS-Net [9] 根据前级深度分布的不确定性构建逐像素自适应薄体积。PatchmatchNet [10] 以可学习 PatchMatch 代替规则的全深度代价体，通过初始化、传播和评估迭代更新候选。GBi-Net [11] 将深度估计改写为广义二分搜索，并通过容错区间处理分类错误和越界样本；IterMVS [12] 则在循环隐藏状态中编码像素级深度概率分布并迭代更新。UniMVSNet [13] 从深度表示角度统一分类与回归，以兼顾代价体监督和亚像素估计。这些研究表明，候选空间不只是实现细节，而是影响覆盖能力、离散精度与误差恢复能力的关键因素。本文的自适应范围直接服务于三级结构中的前级误差修正，并与遮挡监督和深度假设感知融合共同优化困难区域。
 
 ### 2.4 上下文建模与几何先验
 
-除候选搜索外，近年来的方法也通过更强的上下文和几何建模改善困难区域。TransMVSNet [13] 使用自注意力与交叉注意力在图像内和图像间传播长程信息；GeoMVSNet [17] 将粗阶段深度和概率体包含的几何线索传递到精细阶段；GoMVS [18] 根据局部表面几何将相邻位置的匹配代价对应到参考深度空间后再进行聚合。GC-MVSNet [19] 则在训练阶段引入跨视图、多尺度几何一致性约束。这些工作分别强调上下文、阶段间几何信息和局部几何一致性。本文聚焦于大视差与复杂遮挡共同造成的级联误差，从逐源可见性监督、自适应候选范围和候选深度相关视图融合三个环节建立一条连续的抑制路径。
+除候选搜索外，近年来的方法也通过更强的上下文和几何建模改善困难区域。TransMVSNet [14] 使用自注意力与交叉注意力在图像内和图像间传播长程信息；GeoMVSNet [15] 将粗阶段深度和概率体包含的几何线索传递到精细阶段；GoMVS [16] 根据局部表面几何将相邻位置的匹配代价对应到参考深度空间后再进行聚合。GC-MVSNet [17] 则在训练阶段引入跨视图、多尺度几何一致性约束。这些工作分别强调上下文、阶段间几何信息和局部几何一致性。本文聚焦于大视差与复杂遮挡共同造成的级联误差，从逐源可见性监督、自适应候选范围和候选深度相关视图融合三个环节建立一条连续的抑制路径。
 
 ## 3 方法
 
 ### 3.1 符号与总体框架
 
-本文保留 Vis-MVSNet 的三级由粗到细主体，将 A、B、C 分别嵌入可见性学习、候选深度生成和多视图代价融合。Stage 1 在全局深度范围内建立粗粒度候选并获得初始深度分布；Stage 2 和 Stage 3 使用 B 根据前级估计状态更新局部候选范围，并使用 C 在每个候选深度处聚合源视图特征；A 在训练阶段以逐源几何可见性监督共享匹配表示。这样，三个模块分别作用于误差传播链的来源、搜索约束和证据聚合。
+网络由共享特征提取、逐源匹配、可靠性估计、多视图融合和三级深度回归组成。Stage 1、Stage 2 和 Stage 3 分别在输入分辨率的 $1/8$、$1/4$ 和 $1/2$ 尺度运行。Stage 1 使用全局深度候选，B 根据前一级深度分布生成 Stage 2/3 的候选。每个阶段先对参考—源视图匹配体进行正则化，再由成对深度分布估计不确定性；C 在逐深度候选处融合逐源隐变量，融合体经第二次正则化产生阶段深度。A 在训练时提供几何遮挡监督，真值深度不作为推理输入。
 
-| 符号 | 定义 |
+| 符号 | 定义及形状（省略 batch 维） |
 | --- | --- |
-| $I_0,I_s$ | 参考图像与第 $s$ 个源图像 |
-| $K_i,R_i,t_i$ | 相机内参及世界坐标到相机坐标的外参 |
-| $\mathbf p,\widetilde{\mathbf p}$ | 参考像素二维坐标及齐次坐标 |
-| $\phi_i^t,H_t,W_t,C_t$ | 阶段 $t$ 的特征及其空间大小、通道数 |
-| $d_k^t(\mathbf p),N_t$ | 第 $k$ 个候选深度及该阶段候选数量 |
-| $F_s^t(\mathbf p,k)$ | 参考—源视图匹配特征 |
-| $P^t(\mathbf p,k)$ | 当前候选集合上的深度概率 |
-| $\hat d^t,\sigma^t$ | 预测深度及深度概率标准差 |
-| $G_i$ | 训练或评测时使用的真值深度 |
-| $g_s,m_s,v_s,o_s$ | 几何有效掩码、监督掩码、可见标签、遮挡标签 |
-| $q_s,b_s,r_{s,k}$ | 可见性预测、基础融合 logit、候选深度残差 |
-| $\tau_a,\tau_r$ | 深度一致性绝对容差和相对容差 |
-| $\kappa_t,h_{\min}^t,h_{\max}^t$ | 范围尺度及半宽上下界 |
-| $\eta_t,\gamma,\alpha$ | 融合残差幅度、Focal 指数和类别权重 |
-| $\beta_t,\lambda_A,\lambda_0$ | 阶段损失权重、A 损失权重及基线辅助项权重 |
+| $t\in\{1,2,3\},s\in\{1,\ldots,S\},k\in\{0,\ldots,N_t-1\}$ | 阶段、源视图和深度候选索引；$S$ 不含参考视图 |
+| $I_0,I_s;K_i,R_i,\mathbf t_i$ | 参考/源图像，内参与世界到相机的外参 |
+| $\phi_i^t\in\mathbb R^{C_t\times H_t\times W_t}$ | 阶段图像特征 |
+| $\mathbf p,\widetilde{\mathbf p}$ | 参考像素二维及齐次坐标 |
+| $d_k^t(\mathbf p)$ | 光轴深度候选，单位 mm |
+| $F_s^t,V_s^t\in\mathbb R^{8\times N_t\times H_t\times W_t}$ | 组相关匹配体与逐源正则化隐变量 |
+| $a_s^t,P_s^t\in\mathbb R^{N_t\times H_t\times W_t}$ | 成对候选得分及其深度维概率 |
+| $E_s^t,u_s^t,z_s^t,q_s^t$ | 成对熵、预测对数不确定性尺度、可见性 logit 和概率；均为 $H_t\times W_t$ |
+| $r_s^t,w_s^t\in\mathbb R^{N_t\times H_t\times W_t}$ | 候选相关融合残差和归一化源视图权重 |
+| $P^t,\hat d^t,\sigma^t$ | 融合深度概率、期望深度和标准差 |
+| $\mu^t,s^t,h^t,d_-^t,d_+^t$ | 前级均值/标准差对齐值、搜索半宽及区间两端；深度量单位均为 mm |
+| $G_i,g_s,m_s,v_s,o_s$ | 真值深度、几何有效掩码、监督掩码、可见与遮挡标签 |
+| $\tau_a,\tau_r,\kappa_t$ | 几何绝对容差（mm）、相对容差和半宽倍率（后两者无量纲） |
+| $c_+,c_-,\gamma,\eta_t$ | Focal 类别权重、难度指数和残差幅度 |
+| $\beta_t,\lambda_p,\lambda_u,\lambda_A,\lambda_C$ | 阶段、成对深度、不确定性、A、C 监督权重 |
 
-深度 $d$ 表示沿相机光轴的深度；所有图像坐标、特征分辨率与内参须保持尺度一致。对于一般相机配置，使用相对变换 $R_{s0}=R_sR_0^\top$、$\mathbf t_{s0}=\mathbf t_s-R_sR_0^\top\mathbf t_0$，得到候选三维点在源相机中的位置：
+所有内参与像素坐标使用对应特征尺度。设 $R_{s0}=R_sR_0^\top$、$\mathbf t_{s0}=\mathbf t_s-R_sR_0^\top\mathbf t_0$，参考像素和光轴深度对应的源相机坐标为：
 
 $$
-\mathbf X_s(\mathbf p,d)
-=R_{s0}\!\left(dK_0^{-1}\widetilde{\mathbf p}\right)+\mathbf t_{s0},
-\qquad
-\mathbf p_s(d)=\pi\!\left(K_s\mathbf X_s(\mathbf p,d)\right).
+\mathbf X_s(\mathbf p,d)=R_{s0}(dK_0^{-1}\widetilde{\mathbf p})+\mathbf t_{s0},
+\qquad \mathbf p_s(d)=\pi(K_s\mathbf X_s(\mathbf p,d)),
+\quad \pi([x,y,z]^\top)=[x/z,y/z]^\top.
 \tag{1}
 $$
 
-其中 $\pi([x,y,z]^\top)=[x/z,y/z]^\top$。利用可微重采样在候选位置提取源特征，并形成匹配表示：
+将源特征双线性重采样到参考视锥，与参考特征做八组组相关，构成逐源匹配体：
 
 $$
-F_s^t(\mathbf p,k)=
-\Psi_t\!\left(
-\phi_0^t(\mathbf p),
-\operatorname{Sample}\!\left(\phi_s^t,\mathbf p_s(d_k^t(\mathbf p))\right)
-\right).
+F_s^t(\mathbf p,k)=\operatorname{GWC}_{8}\!\left(
+\phi_0^t(\mathbf p),\operatorname{Sample}(\phi_s^t,\mathbf p_s(d_k^t(\mathbf p)))\right),
+\quad V_s^t=\mathcal R_{\mathrm{pair}}^t(F_s^t).
 \tag{2}
 $$
 
-$\Psi_t$ 表示由参考特征和重投影源特征形成的组相关匹配编码。基于相机几何进行特征变换的思路与 MVSNet 的可微匹配框架相关。[文献2](https://www.ecva.net/papers/eccv_2018/papers_ECCV/html/Yao_Yao_MVSNet_Depth_Inference_ECCV_2018_paper.php)
-
-图1给出总体结构。Stage 1 在全局候选集合上估计粗深度；后续阶段由 B 更新候选集合，再由 C 聚合源视图信息。A 通过训练监督约束共享匹配表示。GT 深度仅参与标签构造、损失和评测，不作为推理输入。
+成对得分 $a_s^t=\mathcal H_{\mathrm{depth}}^t(V_s^t)$ 经深度维 softmax 产生 $P_s^t$，成对深度为 $\hat d_s^t=\sum_kP_s^td_k^t$。概率熵 $E_s^t=-\sum_kP_s^t\log(P_s^t+\epsilon)$ 经共享二维编码器产生 $u_s^t$ 和 $z_s^t$。这里 $u_s^t$ 是可正可负的对数尺度，基础可靠性 logit 为 $-u_s^t$，对应正权重 $\exp(-u_s^t)$；它与融合概率的深度标准差 $\sigma^t$ 含义不同。该成对不确定性加权机制继承自 Vis-MVSNet [6]。
 
 ![图1 三级 Vis-MVSNet 详细总体架构](paper_complete_assets/framework.png)
 
-**图1. 面向大视差与复杂遮挡的三级 Vis-MVSNet 总体架构。** 上部给出三尺度由粗到细推理过程，下部展开单个阶段的两步代价体正则化。原始主干首先对每个参考—源视图对构建代价体并回归成对深度与不确定性，再融合逐源隐变量并回归阶段深度。A 在逐源匹配特征上施加几何可见性监督；B 根据前级深度概率状态生成 Stage 2/3 候选；C 以基础可靠性和候选相关残差计算逐深度、逐源视图融合权重。
+**图1. 三级总体结构及单阶段内部数据流。** 每个阶段先构建并正则化逐源匹配体，回归成对深度和对数不确定性，再融合隐变量并回归阶段深度。蓝色虚线为 A 的训练监督；橙色为 B 的候选生成；青色为 C 的逐候选融合。B 作用于 Stage 2/3，C 在三个阶段使用。
 
 ![图2 三个改进模块的内部计算流程](paper_complete_assets/modules_abc_detailed.png)
 
-**图2. A、B、C 三个模块的内部计算流程。** A 由几何重投影和源深度一致性构造可见、遮挡与无效标签，并监督逐源可见性预测；B 由前级概率分布计算均值和标准差，经范围裁剪及全局边界求交后生成候选深度；C 将基础可靠性与候选深度残差相加，在源视图维归一化后逐候选融合隐变量。
+**图2. A、B、C 的内部计算。** A 由真值几何生成可见性标签并监督熵编码分支；B 根据均值与标准差调整候选范围；C 将对数不确定性基础分数与候选相关残差相加，在源视图维度归一化。GT 只参与训练监督和实验诊断。
 
 ### 3.2 A：逐源视图遮挡感知监督
 
-#### 3.2.1 几何标签
-
-将 $G_0(\mathbf p)$ 代入式(1)，得到源相机投影深度 $z_s(\mathbf p)$ 与像素位置 $\mathbf p_s^\star$。从源真值深度采样 $G_s(\mathbf p_s^\star)$，定义一致性容差：
+将参考真值 $G_0(\mathbf p)$ 代入式(1)，得到源投影深度 $Z_s(\mathbf p)=[\mathbf X_s]_3$ 和像素 $\mathbf p_s^\star$，采样源深度 $\widetilde G_s(\mathbf p)=G_s(\mathbf p_s^\star)$。深度一致性容差定义为：
 
 $$
-\tau_s(\mathbf p)=
-\max\!\left(\tau_a,\tau_rG_s(\mathbf p_s^\star)\right).
+\tau_s(\mathbf p)=\max(\tau_a,\tau_r\widetilde G_s(\mathbf p)).
 \tag{3}
 $$
 
-$g_s(\mathbf p)=1$ 要求参考深度有效、投影位于源图像内、源投影深度为正且源真值深度有效。对这些位置分别定义可见和被遮挡标签：
+几何有效掩码 $g_s=1$ 要求参考深度有效、源投影在图像内、投影深度为正、采样源深度及其掩码有效。定义：
 
 $$
-\begin{aligned}
-v_s(\mathbf p)&=g_s(\mathbf p)\,
-\mathbb 1\!\left[
-|z_s(\mathbf p)-G_s(\mathbf p_s^\star)|\leq\tau_s(\mathbf p)
-\right],\\
-o_s(\mathbf p)&=g_s(\mathbf p)\,
-\mathbb 1\!\left[
-z_s(\mathbf p)>G_s(\mathbf p_s^\star)+\tau_s(\mathbf p)
-\right],\\
-m_s(\mathbf p)&=v_s(\mathbf p)+o_s(\mathbf p).
-\end{aligned}
+v_s=g_s\mathbb1[|Z_s-\widetilde G_s|\leq\tau_s],\qquad
+o_s=g_s\mathbb1[Z_s>\widetilde G_s+\tau_s],\qquad m_s=v_s+o_s.
 \tag{4}
 $$
 
-明显位于源表面前方的不一致点以及投影无效点不作为遮挡负样本，只有 $m_s=1$ 的位置进入可见性损失，从而避免将越界投影和缺失深度错误标记为遮挡。图2展示可见、遮挡和无效三种几何状态。
+位于源表面前方的不一致点、越界投影和缺失深度不计为遮挡负样本。标签在相应尺度下由几何生成；只有 $m_s=1$ 的位置进入监督。
 
-#### 3.2.2 可见性目标
-
-由共享匹配表示提取逐源特征 $H_s^t(\mathbf p)$，预测可见性：
+在共享熵编码特征 $H_s^t=\mathcal E^t(E_s^t)$ 上预测逐源可见性：
 
 $$
-q_s^t(\mathbf p)
-=\operatorname{sigmoid}\!\left(f_A^t(H_s^t(\mathbf p))\right).
+z_s^t=f_A^t(H_s^t),\qquad q_s^t=\operatorname{sigmoid}(z_s^t).
 \tag{5}
 $$
 
-本文采用二元 Focal 形式同时处理可见/遮挡样本不均衡并加强困难样本的梯度：
+为兼顾类别比例与难样本，定义 $p_y=qv+(1-q)(1-v)$、$c(v)=c_+v+c_-(1-v)$，采用加权 Focal BCE [18]：
 
 $$
-\ell_{\mathrm{vis}}(q,v)=
--\alpha v(1-q)^\gamma\log q
--(1-\alpha)(1-v)q^\gamma\log(1-q).
+\ell_{\mathrm{vis}}(q,v)=c(v)(1-p_y)^\gamma[-v\log q-(1-v)\log(1-q)].
 \tag{6}
 $$
 
-Focal Loss 通过降低易分类样本的损失权重，使训练更集中于遮挡边界和难匹配位置。[文献8](https://openaccess.thecvf.com/content_iccv_2017/html/Lin_Focal_Loss_for_ICCV_2017_paper.html) 当 $\gamma=0$ 时退化为带类别权重的交叉熵。数值计算中将 $q$ 限制在 $[\epsilon,1-\epsilon]$。
-
-阶段监督为：
+对每个阶段与源视图，在有效监督集合计算可见比例 $f_+=\sum m_sv_s/\max(1,\sum m_s)$；类别权重为 $c_+=\min(10,0.5/\max(f_+,10^{-3}))$ 和 $c_-=\min(10,0.5/\max(1-f_+,10^{-3}))$。实际计算使用带 logits 的稳定 BCE。
 
 $$
-\mathcal L_A^t=
-\frac{\sum_s\sum_{\mathbf p}m_s^t(\mathbf p)\,
-\ell_{\mathrm{vis}}\!\left(q_s^t(\mathbf p),v_s^t(\mathbf p)\right)}
-{\max\!\left(1,\sum_s\sum_{\mathbf p}m_s^t(\mathbf p)\right)}.
+\mathcal L_A^t=\frac1S\sum_s
+\frac{\sum_{\mathbf p}m_s^t\ell_{\mathrm{vis}}(q_s^t,v_s^t)}
+{\max(\epsilon,\sum_{\mathbf p}m_s^tc(v_s^t))}.
 \tag{7}
 $$
 
-所有标签均在对应特征尺度下构建或以保持离散语义的方式对齐。没有有效样本时，该项为零。A 通过共享匹配特征传递梯度，可见性概率不直接乘入融合权重。
+无有效样本时该源损失为零。$q_s^t$ 用于训练监督和诊断，不直接乘入融合权重。A 同时限制成对深度监督的有效位置，并使被遮挡样本的不确定性损失只更新不确定性分支，见式(20)。
 
 ### 3.3 B：自适应深度搜索范围
 
-#### 3.3.1 估计状态与范围半宽
-
-对 $t>1$，将上一阶段深度均值与标准差对齐到当前尺度，记为 $\mu^t(\mathbf p)$ 和 $s^t(\mathbf p)$。在深度单位一致的条件下，本文将搜索半宽定义为：
+对 $t>1$，将前级深度与标准差双线性对齐，得到 $\mu^t$、$s^t$；当前阶段名义间距为 $\delta_t$，固定半宽记为 $h_0^t=\lfloor N_t/2\rfloor\delta_t$。搜索半宽为：
 
 $$
-h^t(\mathbf p)=
-\operatorname{clip}\!\left(
-\kappa_t s^t(\mathbf p),h_{\min}^t,h_{\max}^t
-\right).
+h^t(\mathbf p)=\operatorname{clip}(\kappa_ts^t(\mathbf p),h_{\min}^t,h_{\max}^t),
+\quad h_{\min}^t=\rho_{\min}h_0^t,\quad h_{\max}^t=\rho_{\max}h_0^t.
 \tag{8}
 $$
 
-其中 $\kappa_t>0$ 控制标准差到搜索半宽的放大比例，$0<h_{\min}^t\leq h_{\max}^t$ 分别限制最小搜索宽度和最大纠错范围。上下界既防止高置信位置的候选塌缩，也避免低置信位置因范围过宽而过度降低采样分辨率。不确定性引导候选范围已有 UCS-Net 等研究基础。[文献4](https://openaccess.thecvf.com/content_CVPR_2020/html/Cheng_Deep_Stereo_Using_Adaptive_Thin_Volume_Representation_With_Uncertainty_Awareness_CVPR_2020_paper.html)
+$\kappa_t\geq0$、$0<\rho_{\min}\leq\rho_{\max}$ 是无量纲参数。半宽上下界分别防止候选塌缩和过度扩大。不确定性引导薄体积的研究基础见 UCS-Net [9]；本文将其用于大视差条件下的级联纠错，并与几何监督、候选相关融合共同分析。
 
-设有效全局深度范围为 $[d_{\min},d_{\max}]$，先将中心限制在其中，再取范围与全局区间的交集：
+前级深度是全局有效候选的加权均值，因此 $\mu^t\in[d_{\min},d_{\max}]$。区间与全局边界相交：
 
 $$
-\begin{aligned}
-\bar\mu^t(\mathbf p)&=\operatorname{clip}
-\left(\mu^t(\mathbf p),d_{\min},d_{\max}\right),\\
-a^t(\mathbf p)&=\max\left(d_{\min},\bar\mu^t(\mathbf p)-h^t(\mathbf p)\right),\\
-b^t(\mathbf p)&=\min\left(d_{\max},\bar\mu^t(\mathbf p)+h^t(\mathbf p)\right).
-\end{aligned}
+d_-^t=\max(d_{\min},\mu^t-h^t),\qquad
+d_+^t=\min(d_{\max},\mu^t+h^t).
 \tag{9}
 $$
 
-式（9）通过区间求交保证候选深度不越过全局边界，因此靠近 $d_{\min}$ 或 $d_{\max}$ 时实际范围会相应收缩。
-
-#### 3.3.2 候选深度
-
-令 $N_t\geq2$，均匀采样可写为：
+对 $N_t\geq2$，候选深度为：
 
 $$
-d_k^t(\mathbf p)=a^t(\mathbf p)
-+\frac{k}{N_t-1}\left(b^t(\mathbf p)-a^t(\mathbf p)\right),
-\qquad k=0,\ldots,N_t-1.
+d_k^t=d_-^t+\frac{k}{N_t-1}(d_+^t-d_-^t),\qquad k=0,\ldots,N_t-1.
 \tag{10}
 $$
 
-Stage 1 使用全局候选范围；后续阶段使用式(8)—(10)。在固定 $N_t$ 下，实际间距为：
+实际采样间距为：
 
 $$
-\Delta^t(\mathbf p)=
-\frac{b^t(\mathbf p)-a^t(\mathbf p)}{N_t-1}.
+\Delta^t(\mathbf p)=\frac{d_+^t(\mathbf p)-d_-^t(\mathbf p)}{N_t-1}.
 \tag{11}
 $$
 
-在固定候选数下，扩大范围会同步增加采样间距。因此，B 并非简单扩大全部像素的搜索区间，而是在候选覆盖与局部离散精度之间进行逐像素调节。实验同时报告真实深度覆盖率、采样间距和最终深度误差，以分析这种调节是否有效。
+同样的候选预算下，扩大范围也会增大间距。因此范围覆盖和采样精度必须联合评价；标准差反映当前候选分布的离散程度，不能直接当作真实误差。实验同时报告候选覆盖率、归一化范围宽度和最终误差。
 
 ### 3.4 C：深度假设感知源视图融合
 
-#### 3.4.1 候选深度相关残差
-
-令 $P_s^t(\mathbf p,k)$ 表示源视图的成对候选匹配概率，归一化深度坐标定义为：
+候选深度坐标归一化为：
 
 $$
-\xi_k^t(\mathbf p)=
-2\frac{d_k^t(\mathbf p)-d_0^t(\mathbf p)}
-{d_{N_t-1}^t(\mathbf p)-d_0^t(\mathbf p)+\epsilon}-1.
+\xi_k^t=2\frac{d_k^t-d_0^t}{\max(d_{N_t-1}^t-d_0^t,\epsilon_d)}-1.
 \tag{12}
 $$
 
-基于匹配特征、成对概率及深度坐标预测残差：
+其中 $\epsilon_d$ 与深度具有相同单位。将八通道隐变量、成对得分的 $\tanh$、成对概率和候选坐标连接为十一通道输入，预测残差：
 
 $$
-r_s^t(\mathbf p,k)=
-\eta_t\tanh\!\left(
-g_C^t\left[F_s^t(\mathbf p,k),
-P_s^t(\mathbf p,k),\xi_k^t(\mathbf p)\right]
-\right).
+J_s^t=\operatorname{Concat}(V_s^t,\tanh a_s^t,P_s^t,\xi^t),\quad
+\zeta_s^t=g_C^t(J_s^t),\quad r_s^t=\eta_t\tanh\zeta_s^t.
 \tag{13}
 $$
 
-$\eta_t\geq0$ 限定修正幅度，$g_C^t$ 表示沿候选深度和空间处理匹配特征的轻量预测器。该结构保留由成对不确定性得到的基础可靠性分支，并增加候选深度相关残差分支。
+$g_C^t$ 依次包含 $3\times3\times3$ 卷积（11→8 通道）、四组 GroupNorm、ReLU 与 $1\times1\times1$ 卷积（8→1 通道）。输出层以零初始化，使训练开始时残差为零。$\eta_t\geq0$ 约束残差幅度。
 
-#### 3.4.2 权重归一化与融合
-
-令 $b_s^t(\mathbf p)$ 为基础源视图可靠性 logit，$\mathcal S_v^t(\mathbf p,k)$ 为当前候选处几何投影有效的源视图集合。采用源视图维度上的 softmax：
+候选相关分数 $\ell_{s,k}^t=-u_s^t+r_{s,k}^t$ 在源视图维度归一化：
 
 $$
-\alpha_s^t(\mathbf p,k)=
-\frac{\exp\left(b_s^t(\mathbf p)+r_s^t(\mathbf p,k)\right)}
-{\sum_{j\in\mathcal S_v^t(\mathbf p,k)}
-\exp\left(b_j^t(\mathbf p)+r_j^t(\mathbf p,k)\right)},
-\quad s\in\mathcal S_v^t(\mathbf p,k).
+w_{s,k}^t(\mathbf p)=\frac{\exp(-u_s^t(\mathbf p)+r_{s,k}^t(\mathbf p))}
+{\sum_{j=1}^{S}\exp(-u_j^t(\mathbf p)+r_{j,k}^t(\mathbf p))}.
 \tag{14}
 $$
 
-有效投影条件由相机参数与候选深度计算，不使用真值遮挡标签；无有效源视图的位置由有效性掩码排除。
-
-融合特征为：
+融合对象为逐源正则化隐变量：
 
 $$
-F_{\mathrm{fused}}^t(\mathbf p,k)=
-\sum_{s\in\mathcal S_v^t(\mathbf p,k)}
-\alpha_s^t(\mathbf p,k)F_s^t(\mathbf p,k).
+V^t(\mathbf p,k)=\sum_{s=1}^{S}w_{s,k}^t(\mathbf p)V_s^t(\mathbf p,k).
 \tag{15}
 $$
 
-当 $r_s^t=0$ 时，权重退化为基础 logit 的归一化；该性质说明残差对基础权重的扩展关系，不额外证明整个网络与某个基线实现完全一致。
+权重归一化满足 $w_{s,k}^t\geq0$、$\sum_sw_{s,k}^t=1$。$r_s^t=0$ 时恢复对数不确定性的基础归一化权重。此式与对正指数权重求和后归一化数学等价；softmax 的归一化维度为源视图，不是深度候选。
 
-#### 3.4.3 概率、深度与标准差
-
-对融合特征正则化后得到深度 logit $\ell^t(\mathbf p,k)$，在候选深度维度归一化：
+融合体经第二次三维正则化产生得分 $a^t$，深度维 softmax 得到：
 
 $$
-P^t(\mathbf p,k)=
-\frac{\exp\left(\ell^t(\mathbf p,k)\right)}
-{\sum_{j=0}^{N_t-1}\exp\left(\ell^t(\mathbf p,j)\right)}.
+P^t(\mathbf p,k)=\frac{\exp a^t(\mathbf p,k)}{\sum_{j=0}^{N_t-1}\exp a^t(\mathbf p,j)}.
 \tag{16}
 $$
 
-深度及标准差为：
+预测深度和标准差分别为：
 
 $$
-\hat d^t(\mathbf p)=
-\sum_{k=0}^{N_t-1}P^t(\mathbf p,k)d_k^t(\mathbf p),
+\hat d^t(\mathbf p)=\sum_kP^t(\mathbf p,k)d_k^t(\mathbf p).
 \tag{17}
 $$
 
 $$
-\sigma^t(\mathbf p)=
-\sqrt{\sum_{k=0}^{N_t-1}P^t(\mathbf p,k)
-\left(d_k^t(\mathbf p)-\hat d^t(\mathbf p)\right)^2+\epsilon}.
+\sigma^t(\mathbf p)=\sqrt{\max\left(\sum_kP^t(\mathbf p,k)(d_k^t(\mathbf p)-\hat d^t(\mathbf p))^2,\epsilon_\sigma^2\right)}.
 \tag{18}
 $$
 
-该标准差描述当前候选集合上的概率离散程度，并作为后续阶段范围调节的像素级状态量。实验通过各阶段候选覆盖率验证其作用。
+这里 $\epsilon_\sigma$ 为深度尺度的数值稳定下界。$\hat d^t$ 和 $\sigma^t$ 传递到下一阶段的候选生成。
 
 ### 3.5 损失与训练流程
 
-深度监督采用带参数 $\delta>0$ 的平滑绝对误差：
+设 $\Omega_t$ 为阶段有效真值集合，$\delta_0$ 为数据输入的基础深度间距。定义归一化误差 $e^t=|\hat d^t-G_0^t|/\delta_0$ 与 $e_s^t=|\hat d_s^t-G_0^t|/\delta_0$。阶段融合深度损失为：
 
 $$
-\rho_\delta(e)=
-\begin{cases}
-e^2/(2\delta),& |e|<\delta,\\
-|e|-\delta/2,& |e|\geq\delta.
-\end{cases}
+\mathcal L_d^t=\frac{\sum_{\mathbf p\in\Omega_t}e^t(\mathbf p)}{\max(1,|\Omega_t|)}.
 \tag{19}
 $$
 
-阶段深度损失为：
+定义 $\operatorname{Mean}_{M}(f)=\sum Mf/\max(1,\sum M)$。A 启用时，成对深度掩码 $M_{p,s}=v_s$，不确定性掩码 $M_{u,s}=m_s$，且 $\bar e_s=v_se_s+(1-v_s)\operatorname{sg}(e_s)$；A 关闭时，两掩码均为阶段真值有效掩码，$\bar e_s=e_s$。$\operatorname{sg}$ 表示停止梯度。成对深度和不确定性项为：
 
 $$
-\mathcal L_{\mathrm{depth}}^t=
-\frac{\sum_{\mathbf p\in\Omega_{\mathrm{gt}}^t}
-\rho_\delta\left(\hat d^t(\mathbf p)-G_0^t(\mathbf p)\right)}
-{\max(1,|\Omega_{\mathrm{gt}}^t|)}.
+\mathcal L_p^t=\frac1S\sum_s\operatorname{Mean}_{M_{p,s}}(e_s^t),\qquad
+\mathcal L_u^t=\frac1S\sum_s\operatorname{Mean}_{M_{u,s}}(\bar e_s^t\exp(-u_s^t)+u_s^t).
 \tag{20}
 $$
 
-总目标写为：
+不确定性项采用归一化误差对应的 Laplace 负对数似然形式（忽略常数）。若对 C 增加候选可见性监督，则以最近真值候选 $k^*=\arg\min_k|d_k^t-G_0^t|$ 处的 $\operatorname{sigmoid}(\zeta_{s,k^*}^t)$ 代替式(7)中的 $q_s^t$，得到 $\mathcal L_C^t$。联合目标为：
 
 $$
-\mathcal L=
-\sum_{t=1}^{T}\beta_t
-\left(
-\mathcal L_{\mathrm{depth}}^t+
-\lambda_A\mathcal L_A^t+
-\lambda_0\mathcal L_{\mathrm{base,aux}}^t
-\right).
+\mathcal L=\sum_{t=1}^{3}\beta_t\left(\mathcal L_d^t+
+\lambda_p\mathcal L_p^t+\lambda_u\mathcal L_u^t+
+\lambda_A\mathcal L_A^t+\lambda_C\mathcal L_C^t\right).
 \tag{21}
 $$
 
-$\mathcal L_{\mathrm{base,aux}}^t$ 表示 Vis-MVSNet 原有的成对深度—不确定性联合监督。不启用 A 时关闭可见性监督分支；关闭 B 时使用原始候选生成策略；关闭 C 时使用原始不确定性加权融合，从而形成八组受控消融。
+关闭 A 时 $\lambda_A=0$；不使用候选可见性监督时 $\lambda_C=0$。损失权重、阶段候选数量和半宽倍率属于训练配置，应随所用检查点记录。监督标签和推理输入保持分离。
 
-**算法1：前向推理与训练目标。**
+**算法1：三级前向过程。**
 
-1. 输入图像与相机参数，提取各尺度特征。
-2. Stage 1 构建全局候选集合。对后续阶段，根据上一阶段均值、标准差及式(8)—(10)构建候选；B 关闭时执行原始策略。
-3. 根据式(1)—(2)构建逐源匹配特征，并获得基础可靠性与所需成对概率。
-4. C 开启时执行式(12)—(15)；否则采用原始融合。
-5. 由式(16)—(18)得到当前阶段概率、深度和标准差，进入下一阶段。
-6. 推理时输出最终阶段深度；训练时额外构造几何标签，计算 A 的监督与式(21)。
-7. 对总损失执行反向传播并更新网络参数。
+1. 提取三尺度参考和源特征。
+2. Stage 1 构建全局候选，Stage 2/3 由前级深度及标准差生成候选。
+3. 对每个源视图按式(1)—(2)生成逐源匹配隐变量，回归成对概率、深度、熵、对数不确定性及可见性 logit。
+4. C 启用时按式(12)—(15)逐候选融合，否则使用基础不确定性权重。
+5. 按式(16)—(18)回归阶段深度和标准差，将前级结果双线性对齐到下一尺度；阶段间候选生成保留计算图。
+6. 推理输出最终深度；训练时按式(3)—(7)构造遮挡监督并计算式(19)—(21)。
 
 ## 4 实验设置
 
 ### 4.1 数据集与评测协议
 
-实验在 DTU 数据集 [7] 上进行。采用测试划分、light 3 光照条件和像素加权聚合方式，推理阶段统一输入五个视图。为考察训练视图数量对方法的影响，分别使用五视图和三视图训练模型，并保持对应八组消融的评测协议一致。除整体区域外，进一步在深度边界、大视差、任一源视图遮挡、多数源视图遮挡、大视差与遮挡交集以及边界与遮挡交集区域进行评价。
+实验在 DTU 数据集 [19] 上进行。采用测试划分、light 3 光照条件和像素加权聚合方式，推理阶段统一输入五个视图。为考察训练视图数量对方法的影响，分别使用五视图和三视图训练模型，并保持对应八组消融的评测协议一致。除整体区域外，进一步在深度边界、大视差、任一源视图遮挡、多数源视图遮挡、大视差与遮挡交集以及边界与遮挡交集区域进行评价。
 
-平均绝对误差 Abs 衡量预测深度与真值深度之间的平均偏差，数值越低越好；Acc2、Acc4 和 Acc8 分别统计误差小于 2、4 和 8 个深度单位的像素比例，数值越高越好。S1–S3 coverage 表示真实深度落入对应阶段候选范围的像素比例，S1–S3 width 表示各阶段平均候选区间宽度。所有相对降幅均以 Base 为参照，按 $({\operatorname{Abs}}_{\mathrm{Base}}-{\operatorname{Abs}}_{\mathrm{model}})/{\operatorname{Abs}}_{\mathrm{Base}}\times100\%$ 计算；准确率和覆盖率变化采用百分点。
+平均绝对误差 Abs 衡量预测深度与真值深度之间的平均偏差，数值越低越好；Acc2、Acc4 和 Acc8 分别统计误差小于 2、4 和 8 个深度单位的像素比例，数值越高越好。S1–S3 coverage 表示真实深度落入对应阶段候选范围的像素比例，S1–S3 width 表示候选区间宽度除以数据基础深度间距后的均值，单位为基础间距倍数；它不是 mm。所有相对降幅均以 Base 为参照，按 $({\operatorname{Abs}}_{\mathrm{Base}}-{\operatorname{Abs}}_{\mathrm{model}})/{\operatorname{Abs}}_{\mathrm{Base}}\times100\%$ 计算；准确率和覆盖率变化采用百分点。
 
 ### 4.2 消融配置
 
@@ -368,7 +294,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 1 | 1 | 0 |
 | Base+A+C | 1 | 0 | 1 |
 | Base+B+C | 0 | 1 | 1 |
-| Ours (A+B+C) | 1 | 1 | 1 |
+| Base+A+B+C | 1 | 1 | 1 |
 
 ## 5 实验结果与分析
 
@@ -387,7 +313,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 5.618 (+22.84%) | 20.852 (+17.85%) | 14.583 (+32.07%) | 29.795 (+17.09%) | 43.010 (+12.46%) | 45.317 (+22.30%) | 33.074 (+14.63%) |
 | Base+A+C | 7.001 (+3.85%) | 24.624 (+2.98%) | 21.081 (+1.81%) | 35.260 (+1.88%) | 48.009 (+2.29%) | 57.437 (+1.52%) | 37.618 (+2.90%) |
 | Base+B+C | 5.493 (+24.56%) | 20.996 (+17.28%) | 14.286 (+33.46%) | 29.114 (+18.98%) | 42.489 (+13.52%) | 44.360 (+23.95%) | 33.300 (+14.05%) |
-| Ours (A+B+C) | 5.575 (+23.43%) | 20.834 (+17.92%) | 14.741 (+31.34%) | 30.125 (+16.17%) | 43.109 (+12.26%) | 46.226 (+20.75%) | 33.326 (+13.98%) |
+| Base+A+B+C | 5.575 (+23.43%) | 20.834 (+17.92%) | 14.741 (+31.34%) | 30.125 (+16.17%) | 43.109 (+12.26%) | 46.226 (+20.75%) | 33.326 (+13.98%) |
 
 完整方法将整体 Abs 从 7.281 降至 5.575，相对降低 23.43%。在大视差区域，Abs 从 21.469 降至 14.741，降幅达到 31.34%；在任一源视图遮挡区域和大视差与遮挡交集区域，降幅分别为 16.17% 和 20.75%。这些区域的降幅均具有明确幅度，表明改进并非只作用于普通像素，而是集中覆盖了本文关注的困难匹配条件。
 
@@ -408,7 +334,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 5.618 | 81.82% | 89.51% | 93.18% | 96.52% | 97.14% | 95.42% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 7.001 | 80.61% | 87.98% | 91.44% | 96.52% | 95.76% | 94.24% | 188.000 | 62.780 | 16.142 |
 | Base+B+C | 5.493 | 81.47% | 89.51% | 93.22% | 96.52% | 97.23% | 95.51% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 5.575 | 81.85% | 89.49% | 93.12% | 96.52% | 97.19% | 95.46% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 5.575 | 81.85% | 89.49% | 93.12% | 96.52% | 97.19% | 95.46% | 188.000 | 62.000 | 15.000 |
 
 ### 5.2 三视图训练结果
 
@@ -425,7 +351,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 6.319 (+17.23%) | 22.341 (+16.06%) | 16.850 (+26.55%) | 33.277 (+11.59%) | 47.119 (+7.84%) | 51.307 (+17.32%) | 35.321 (+12.73%) |
 | Base+A+C | 7.636 (-0.03%) | 25.824 (+2.97%) | 22.756 (+0.80%) | 37.830 (-0.51%) | 50.703 (+0.83%) | 61.209 (+1.36%) | 39.093 (+3.41%) |
 | Base+B+C | 5.919 (+22.47%) | 21.592 (+18.88%) | 15.499 (+32.43%) | 30.651 (+18.57%) | 44.071 (+13.80%) | 47.328 (+23.73%) | 33.588 (+17.01%) |
-| Ours (A+B+C) | 6.233 (+18.35%) | 22.172 (+16.69%) | 16.549 (+27.86%) | 32.749 (+12.99%) | 46.557 (+8.94%) | 50.825 (+18.10%) | 34.922 (+13.71%) |
+| Base+A+B+C | 6.233 (+18.35%) | 22.172 (+16.69%) | 16.549 (+27.86%) | 32.749 (+12.99%) | 46.557 (+8.94%) | 50.825 (+18.10%) | 34.922 (+13.71%) |
 
 完整方法将整体 Abs 从 7.634 降至 6.233，相对降低 18.35%；在大视差、任一源视图遮挡以及大视差与遮挡交集区域分别降低 27.86%、12.99% 和 18.10%。这说明在训练视图减少的条件下，联合方法仍能改善目标困难区域。
 
@@ -444,7 +370,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 6.319 | 79.34% | 88.06% | 92.24% | 96.52% | 97.00% | 94.82% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 7.636 | 77.38% | 86.32% | 90.61% | 96.52% | 95.65% | 93.85% | 188.000 | 62.805 | 16.220 |
 | Base+B+C | 5.919 | 78.61% | 87.74% | 92.27% | 96.52% | 97.18% | 95.02% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 6.233 | 79.41% | 88.27% | 92.35% | 96.52% | 97.02% | 94.92% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 6.233 | 79.41% | 88.27% | 92.35% | 96.52% | 97.02% | 94.92% | 188.000 | 62.000 | 15.000 |
 
 ### 5.3 单模块与组合效果
 
@@ -457,15 +383,15 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | 加入 A | Base → Base+A | +4.96% | +2.55% | +2.36% | +4.23% |
 | 加入 A | Base+B → Base+A+B | -0.39% | +1.00% | +2.94% | +3.43% |
 | 加入 A | Base+C → Base+A+C | +0.69% | +1.15% | -0.38% | +1.36% |
-| 加入 A | Base+B+C → Ours (A+B+C) | -1.50% | -3.19% | -4.21% | -0.08% |
+| 加入 A | Base+B+C → Base+A+B+C | -1.50% | -3.19% | -4.21% | -0.08% |
 | 加入 B | Base → Base+B | +23.15% | +31.39% | +19.95% | +11.60% |
 | 加入 B | Base+A → Base+A+B | +18.82% | +30.30% | +20.43% | +10.86% |
 | 加入 B | Base+C → Base+B+C | +22.08% | +33.01% | +22.47% | +12.68% |
-| 加入 B | Base+A+C → Ours (A+B+C) | +20.36% | +30.07% | +19.52% | +11.41% |
+| 加入 B | Base+A+C → Base+A+B+C | +20.36% | +30.07% | +19.52% | +11.41% |
 | 加入 C | Base → Base+C | +3.18% | +0.66% | +1.90% | +1.56% |
 | 加入 C | Base+A → Base+A+C | -1.16% | -0.76% | -0.85% | -1.39% |
 | 加入 C | Base+B → Base+B+C | +1.84% | +3.02% | +4.99% | +2.77% |
-| 加入 C | Base+A+B → Ours (A+B+C) | +0.76% | -1.09% | -2.01% | -0.76% |
+| 加入 C | Base+A+B → Base+A+B+C | +0.76% | -1.09% | -2.01% | -0.76% |
 
 **表6. 五视图训练下加入单个模块时的 Acc4 变化。**
 
@@ -474,15 +400,15 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | 加入 A | Base → Base+A | +0.07 pp | -0.13 pp | -0.26 pp | +0.50 pp |
 | 加入 A | Base+B → Base+A+B | -0.11 pp | -0.28 pp | -0.22 pp | +0.40 pp |
 | 加入 A | Base+C → Base+A+C | +0.11 pp | +0.25 pp | +0.15 pp | +0.18 pp |
-| 加入 A | Base+B+C → Ours (A+B+C) | -0.01 pp | -0.77 pp | -1.23 pp | +0.21 pp |
+| 加入 A | Base+B+C → Base+A+B+C | -0.01 pp | -0.77 pp | -1.23 pp | +0.21 pp |
 | 加入 B | Base → Base+B | +1.77 pp | +6.75 pp | +7.60 pp | +1.62 pp |
 | 加入 B | Base+A → Base+A+B | +1.59 pp | +6.60 pp | +7.64 pp | +1.52 pp |
 | 加入 B | Base+C → Base+B+C | +1.64 pp | +6.91 pp | +7.67 pp | +1.44 pp |
-| 加入 B | Base+A+C → Ours (A+B+C) | +1.51 pp | +5.89 pp | +6.30 pp | +1.47 pp |
+| 加入 B | Base+A+C → Base+A+B+C | +1.51 pp | +5.89 pp | +6.30 pp | +1.47 pp |
 | 加入 C | Base → Base+C | +0.02 pp | -0.28 pp | +0.03 pp | +0.17 pp |
 | 加入 C | Base+A → Base+A+C | +0.06 pp | +0.09 pp | +0.44 pp | -0.15 pp |
 | 加入 C | Base+B → Base+B+C | -0.11 pp | -0.13 pp | +0.10 pp | -0.00 pp |
-| 加入 C | Base+A+B → Ours (A+B+C) | -0.01 pp | -0.62 pp | -0.90 pp | -0.20 pp |
+| 加入 C | Base+A+B → Base+A+B+C | -0.01 pp | -0.62 pp | -0.90 pp | -0.20 pp |
 
 ![图5 两套训练设置的消融热力图](paper_complete_assets/ablation_heatmap.png)
 
@@ -525,7 +451,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 5.618 | 81.82% | 89.51% | 93.18% | 96.52% | 97.14% | 95.42% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 7.001 | 80.61% | 87.98% | 91.44% | 96.52% | 95.76% | 94.24% | 188.000 | 62.780 | 16.142 |
 | Base+B+C | 5.493 | 81.47% | 89.51% | 93.22% | 96.52% | 97.23% | 95.51% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 5.575 | 81.85% | 89.49% | 93.12% | 96.52% | 97.19% | 95.46% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 5.575 | 81.85% | 89.49% | 93.12% | 96.52% | 97.19% | 95.46% | 188.000 | 62.000 | 15.000 |
 
 #### A.1.2 深度边界
 
@@ -538,7 +464,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 20.852 | 41.90% | 56.34% | 68.20% | 92.47% | 89.78% | 79.37% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 24.624 | 41.07% | 54.87% | 65.91% | 92.47% | 88.96% | 81.45% | 188.000 | 63.441 | 18.048 |
 | Base+B+C | 20.996 | 41.09% | 55.70% | 67.63% | 92.47% | 89.94% | 79.05% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 20.834 | 42.09% | 56.38% | 68.15% | 92.47% | 89.94% | 79.78% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 20.834 | 42.09% | 56.38% | 68.15% | 92.47% | 89.94% | 79.78% | 188.000 | 62.000 | 15.000 |
 
 #### A.1.3 大视差
 
@@ -551,7 +477,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 14.583 | 66.70% | 77.73% | 83.97% | 84.48% | 89.79% | 87.47% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 21.081 | 61.57% | 71.22% | 76.56% | 84.48% | 83.41% | 80.79% | 188.000 | 58.465 | 15.698 |
 | Base+B+C | 14.286 | 66.35% | 77.88% | 84.10% | 84.48% | 89.98% | 87.64% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 14.741 | 65.77% | 77.11% | 83.50% | 84.48% | 89.88% | 87.44% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 14.741 | 65.77% | 77.11% | 83.50% | 84.48% | 89.88% | 87.44% | 188.000 | 62.000 | 15.000 |
 
 #### A.1.4 任一源视图遮挡
 
@@ -564,7 +490,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 29.795 | 41.29% | 54.11% | 65.03% | 86.48% | 84.81% | 75.05% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 35.260 | 38.86% | 50.41% | 59.99% | 86.48% | 81.14% | 73.21% | 188.000 | 61.563 | 17.391 |
 | Base+B+C | 29.114 | 41.42% | 54.39% | 65.27% | 86.48% | 85.40% | 75.43% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 30.125 | 41.18% | 53.84% | 64.46% | 86.48% | 84.98% | 75.11% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 30.125 | 41.18% | 53.84% | 64.46% | 86.48% | 84.98% | 75.11% | 188.000 | 62.000 | 15.000 |
 
 #### A.1.5 多数源视图遮挡
 
@@ -577,7 +503,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 43.010 | 32.20% | 43.39% | 54.25% | 86.12% | 80.04% | 66.28% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 48.009 | 30.57% | 40.55% | 50.04% | 86.12% | 77.26% | 66.17% | 188.000 | 62.564 | 18.283 |
 | Base+B+C | 42.489 | 32.51% | 43.96% | 54.78% | 86.12% | 80.85% | 66.84% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 43.109 | 31.91% | 42.99% | 53.72% | 86.12% | 80.36% | 66.49% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 43.109 | 31.91% | 42.99% | 53.72% | 86.12% | 80.36% | 66.49% | 188.000 | 62.000 | 15.000 |
 
 #### A.1.6 大视差与遮挡交集
 
@@ -590,7 +516,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 45.317 | 33.76% | 45.57% | 55.61% | 70.89% | 73.80% | 64.74% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 57.437 | 29.16% | 38.37% | 46.18% | 70.89% | 65.55% | 57.82% | 188.000 | 57.805 | 16.863 |
 | Base+B+C | 44.360 | 33.60% | 45.90% | 56.17% | 70.89% | 74.46% | 65.28% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 46.226 | 32.94% | 44.67% | 54.67% | 70.89% | 73.89% | 64.84% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 46.226 | 32.94% | 44.67% | 54.67% | 70.89% | 73.89% | 64.84% | 188.000 | 62.000 | 15.000 |
 
 #### A.1.7 边界与遮挡交集
 
@@ -603,7 +529,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 33.074 | 30.44% | 42.76% | 55.20% | 89.99% | 84.88% | 69.59% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 37.618 | 29.52% | 41.09% | 52.52% | 89.99% | 84.12% | 73.09% | 188.000 | 63.665 | 19.061 |
 | Base+B+C | 33.300 | 30.02% | 42.35% | 54.65% | 89.99% | 85.20% | 69.30% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 33.326 | 30.47% | 42.56% | 54.78% | 89.99% | 85.10% | 69.91% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 33.326 | 30.47% | 42.56% | 54.78% | 89.99% | 85.10% | 69.91% | 188.000 | 62.000 | 15.000 |
 
 ### A.2 三视图训练、五视图测试
 
@@ -618,7 +544,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 6.319 | 79.34% | 88.06% | 92.24% | 96.52% | 97.00% | 94.82% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 7.636 | 77.38% | 86.32% | 90.61% | 96.52% | 95.65% | 93.85% | 188.000 | 62.805 | 16.220 |
 | Base+B+C | 5.919 | 78.61% | 87.74% | 92.27% | 96.52% | 97.18% | 95.02% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 6.233 | 79.41% | 88.27% | 92.35% | 96.52% | 97.02% | 94.92% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 6.233 | 79.41% | 88.27% | 92.35% | 96.52% | 97.02% | 94.92% | 188.000 | 62.000 | 15.000 |
 
 #### A.2.2 深度边界
 
@@ -631,7 +557,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 22.341 | 40.49% | 55.07% | 67.05% | 92.47% | 89.47% | 78.08% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 25.824 | 39.30% | 53.45% | 64.74% | 92.47% | 88.54% | 80.60% | 188.000 | 63.414 | 18.448 |
 | Base+B+C | 21.592 | 39.96% | 54.77% | 67.03% | 92.47% | 89.71% | 78.16% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 22.172 | 40.55% | 54.95% | 66.88% | 92.47% | 89.38% | 78.22% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 22.172 | 40.55% | 54.95% | 66.88% | 92.47% | 89.38% | 78.22% | 188.000 | 62.000 | 15.000 |
 
 #### A.2.3 大视差
 
@@ -644,7 +570,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 16.850 | 61.89% | 74.01% | 81.08% | 84.48% | 89.39% | 85.59% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 22.756 | 56.55% | 67.42% | 73.84% | 84.48% | 83.23% | 79.55% | 188.000 | 58.518 | 15.873 |
 | Base+B+C | 15.499 | 60.47% | 73.15% | 80.88% | 84.48% | 89.89% | 85.94% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 16.549 | 61.37% | 74.17% | 81.21% | 84.48% | 89.49% | 85.87% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 16.549 | 61.37% | 74.17% | 81.21% | 84.48% | 89.49% | 85.87% | 188.000 | 62.000 | 15.000 |
 
 #### A.2.4 任一源视图遮挡
 
@@ -657,7 +583,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 33.277 | 38.60% | 51.21% | 62.21% | 86.48% | 84.03% | 72.67% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 37.830 | 36.55% | 48.21% | 57.92% | 86.48% | 80.40% | 71.63% | 188.000 | 61.602 | 17.735 |
 | Base+B+C | 30.651 | 38.33% | 51.36% | 62.72% | 86.48% | 84.86% | 73.55% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 32.749 | 38.76% | 51.48% | 62.43% | 86.48% | 84.19% | 73.19% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 32.749 | 38.76% | 51.48% | 62.43% | 86.48% | 84.19% | 73.19% | 188.000 | 62.000 | 15.000 |
 
 #### A.2.5 多数源视图遮挡
 
@@ -670,7 +596,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 47.119 | 30.13% | 40.96% | 51.64% | 86.12% | 78.90% | 63.59% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 50.703 | 28.51% | 38.56% | 47.94% | 86.12% | 76.31% | 64.36% | 188.000 | 62.414 | 18.613 |
 | Base+B+C | 44.071 | 29.97% | 41.28% | 52.38% | 86.12% | 80.01% | 64.72% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 46.557 | 30.16% | 41.02% | 51.74% | 86.12% | 79.18% | 64.26% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 46.557 | 30.16% | 41.02% | 51.74% | 86.12% | 79.18% | 64.26% | 188.000 | 62.000 | 15.000 |
 
 #### A.2.6 大视差与遮挡交集
 
@@ -683,7 +609,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 51.307 | 30.27% | 41.76% | 51.67% | 70.89% | 72.70% | 61.18% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 61.209 | 26.06% | 35.15% | 42.76% | 70.89% | 64.90% | 55.44% | 188.000 | 57.794 | 17.265 |
 | Base+B+C | 47.328 | 29.29% | 41.02% | 51.45% | 70.89% | 73.70% | 61.83% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 50.825 | 29.83% | 41.46% | 51.67% | 70.89% | 72.80% | 61.88% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 50.825 | 29.83% | 41.46% | 51.67% | 70.89% | 72.80% | 61.88% | 188.000 | 62.000 | 15.000 |
 
 #### A.2.7 边界与遮挡交集
 
@@ -696,46 +622,44 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 | Base+A+B | 35.321 | 29.58% | 41.67% | 53.95% | 89.99% | 84.46% | 68.08% | 188.000 | 62.000 | 15.000 |
 | Base+A+C | 39.093 | 28.51% | 40.24% | 51.56% | 89.99% | 83.61% | 72.28% | 188.000 | 63.538 | 19.519 |
 | Base+B+C | 33.588 | 29.49% | 42.02% | 54.70% | 89.99% | 84.89% | 68.51% | 188.000 | 62.000 | 15.000 |
-| Ours (A+B+C) | 34.922 | 29.28% | 41.25% | 53.62% | 89.99% | 84.44% | 68.25% | 188.000 | 62.000 | 15.000 |
+| Base+A+B+C | 34.922 | 29.28% | 41.25% | 53.62% | 89.99% | 84.44% | 68.25% | 188.000 | 62.000 | 15.000 |
 
 ## 参考文献
 
-[1] Zhang, Jingyang; Yao, Yao; Li, Shiwei; Luo, Zixin; Fang, Tian. **Visibility-aware Multi-view Stereo Network**. British Machine Vision Conference (BMVC), 2020. [原始来源](https://arxiv.org/abs/2008.07928)。
+[1] Yao, Yao; Luo, Zixin; Li, Shiwei; Fang, Tian; Quan, Long. **MVSNet: Depth Inference for Unstructured Multi-view Stereo**. European Conference on Computer Vision (ECCV), 2018, 767–783. [原始来源](https://www.ecva.net/papers/eccv_2018/papers_ECCV/html/Yao_Yao_MVSNet_Depth_Inference_ECCV_2018_paper.php)。
 
-[2] Yao, Yao; Luo, Zixin; Li, Shiwei; Fang, Tian; Quan, Long. **MVSNet: Depth Inference for Unstructured Multi-view Stereo**. European Conference on Computer Vision (ECCV), 2018, 767–783. [原始来源](https://www.ecva.net/papers/eccv_2018/papers_ECCV/html/Yao_Yao_MVSNet_Depth_Inference_ECCV_2018_paper.php)。
+[2] Yao, Yao; Luo, Zixin; Li, Shiwei; Shen, Tianwei; Fang, Tian; Quan, Long. **Recurrent MVSNet for High-Resolution Multi-View Stereo Depth Inference**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2019, 5525–5534. [原始来源](https://openaccess.thecvf.com/content_CVPR_2019/html/Yao_Recurrent_MVSNet_for_High-Resolution_Multi-View_Stereo_Depth_Inference_CVPR_2019_paper.html)。
 
-[3] Gu, Xiaodong; Fan, Zhiwen; Zhu, Siyu; Dai, Zuozhuo; Tan, Feitong; Tan, Ping. **Cascade Cost Volume for High-Resolution Multi-View Stereo and Stereo Matching**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2020, 2495–2504. [原始来源](https://openaccess.thecvf.com/content_CVPR_2020/html/Gu_Cascade_Cost_Volume_for_High-Resolution_Multi-View_Stereo_and_Stereo_Matching_CVPR_2020_paper.html)。
+[3] Chen, Rui; Han, Songfang; Xu, Jing; Su, Hao. **Point-Based Multi-View Stereo Network**. IEEE/CVF International Conference on Computer Vision (ICCV), 2019, 1538–1547. [原始来源](https://openaccess.thecvf.com/content_ICCV_2019/html/Chen_Point-Based_Multi-View_Stereo_Network_ICCV_2019_paper.html)。
 
-[4] Cheng, Shuo; Xu, Zexiang; Zhu, Shilin; Li, Zhuwen; Li, Li Erran; Ramamoorthi, Ravi; Su, Hao. **Deep Stereo Using Adaptive Thin Volume Representation With Uncertainty Awareness**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2020, 2524–2534. [原始来源](https://openaccess.thecvf.com/content_CVPR_2020/html/Cheng_Deep_Stereo_Using_Adaptive_Thin_Volume_Representation_With_Uncertainty_Awareness_CVPR_2020_paper.html)。
+[4] Yang, Jiayu; Mao, Wei; Alvarez, José M.; Liu, Miaomiao. **Cost Volume Pyramid Based Depth Inference for Multi-View Stereo**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2020, 4877–4886. [原始来源](https://openaccess.thecvf.com/content_CVPR_2020/html/Yang_Cost_Volume_Pyramid_Based_Depth_Inference_for_Multi-View_Stereo_CVPR_2020_paper.html)。
 
-[5] Xu, Qingshan; Tao, Wenbing. **PVSNet: Pixelwise Visibility-Aware Multi-View Stereo Network**. arXiv preprint arXiv:2007.07714, 2020. [原始来源](https://arxiv.org/abs/2007.07714)。
+[5] Gu, Xiaodong; Fan, Zhiwen; Zhu, Siyu; Dai, Zuozhuo; Tan, Feitong; Tan, Ping. **Cascade Cost Volume for High-Resolution Multi-View Stereo and Stereo Matching**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2020, 2495–2504. [原始来源](https://openaccess.thecvf.com/content_CVPR_2020/html/Gu_Cascade_Cost_Volume_for_High-Resolution_Multi-View_Stereo_and_Stereo_Matching_CVPR_2020_paper.html)。
 
-[6] Wang, Fangjinhua; Galliani, Silvano; Vogel, Christoph; Speciale, Pablo; Pollefeys, Marc. **PatchmatchNet: Learned Multi-View Patchmatch Stereo**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2021, 14194–14203. [原始来源](https://openaccess.thecvf.com/content/CVPR2021/html/Wang_PatchmatchNet_Learned_Multi-View_Patchmatch_Stereo_CVPR_2021_paper.html)。
+[6] Zhang, Jingyang; Yao, Yao; Li, Shiwei; Luo, Zixin; Fang, Tian. **Visibility-aware Multi-view Stereo Network**. British Machine Vision Conference (BMVC), 2020. [原始来源](https://arxiv.org/abs/2008.07928)。
 
-[7] Jensen, Rasmus; Dahl, Anders; Vogiatzis, George; Tola, Engin; Aanæs, Henrik. **Large Scale Multi-view Stereopsis Evaluation**. IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2014. [原始来源](https://openaccess.thecvf.com/content_cvpr_2014/papers/Jensen_Large_Scale_Multi-view_2014_CVPR_paper.pdf)。
+[7] Xu, Qingshan; Tao, Wenbing. **PVSNet: Pixelwise Visibility-Aware Multi-View Stereo Network**. arXiv preprint arXiv:2007.07714, 2020. [原始来源](https://arxiv.org/abs/2007.07714)。
 
-[8] Lin, Tsung-Yi; Goyal, Priya; Girshick, Ross; He, Kaiming; Dollár, Piotr. **Focal Loss for Dense Object Detection**. IEEE International Conference on Computer Vision (ICCV), 2017. [原始来源](https://openaccess.thecvf.com/content_iccv_2017/html/Lin_Focal_Loss_for_ICCV_2017_paper.html)。
+[8] Wei, Zizhuang; Zhu, Qingtian; Min, Chen; Chen, Yisong; Wang, Guoping. **AA-RMVSNet: Adaptive Aggregation Recurrent Multi-View Stereo Network**. IEEE/CVF International Conference on Computer Vision (ICCV), 2021, 6187–6196. [原始来源](https://openaccess.thecvf.com/content/ICCV2021/html/Wei_AA-RMVSNet_Adaptive_Aggregation_Recurrent_Multi-View_Stereo_Network_ICCV_2021_paper.html)。
 
-[9] Yao, Yao; Luo, Zixin; Li, Shiwei; Shen, Tianwei; Fang, Tian; Quan, Long. **Recurrent MVSNet for High-Resolution Multi-View Stereo Depth Inference**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2019, 5525–5534. [原始来源](https://openaccess.thecvf.com/content_CVPR_2019/html/Yao_Recurrent_MVSNet_for_High-Resolution_Multi-View_Stereo_Depth_Inference_CVPR_2019_paper.html)。
+[9] Cheng, Shuo; Xu, Zexiang; Zhu, Shilin; Li, Zhuwen; Li, Li Erran; Ramamoorthi, Ravi; Su, Hao. **Deep Stereo Using Adaptive Thin Volume Representation With Uncertainty Awareness**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2020, 2524–2534. [原始来源](https://openaccess.thecvf.com/content_CVPR_2020/html/Cheng_Deep_Stereo_Using_Adaptive_Thin_Volume_Representation_With_Uncertainty_Awareness_CVPR_2020_paper.html)。
 
-[10] Chen, Rui; Han, Songfang; Xu, Jing; Su, Hao. **Point-Based Multi-View Stereo Network**. IEEE/CVF International Conference on Computer Vision (ICCV), 2019, 1538–1547. [原始来源](https://openaccess.thecvf.com/content_ICCV_2019/html/Chen_Point-Based_Multi-View_Stereo_Network_ICCV_2019_paper.html)。
+[10] Wang, Fangjinhua; Galliani, Silvano; Vogel, Christoph; Speciale, Pablo; Pollefeys, Marc. **PatchmatchNet: Learned Multi-View Patchmatch Stereo**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2021, 14194–14203. [原始来源](https://openaccess.thecvf.com/content/CVPR2021/html/Wang_PatchmatchNet_Learned_Multi-View_Patchmatch_Stereo_CVPR_2021_paper.html)。
 
-[11] Yang, Jiayu; Mao, Wei; Alvarez, José M.; Liu, Miaomiao. **Cost Volume Pyramid Based Depth Inference for Multi-View Stereo**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2020, 4877–4886. [原始来源](https://openaccess.thecvf.com/content_CVPR_2020/html/Yang_Cost_Volume_Pyramid_Based_Depth_Inference_for_Multi-View_Stereo_CVPR_2020_paper.html)。
+[11] Mi, Zhenxing; Di, Chang; Xu, Dan. **Generalized Binary Search Network for Highly-Efficient Multi-View Stereo**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2022, 12991–13000. [原始来源](https://openaccess.thecvf.com/content/CVPR2022/html/Mi_Generalized_Binary_Search_Network_for_Highly-Efficient_Multi-View_Stereo_CVPR_2022_paper.html)。
 
-[12] Wei, Zizhuang; Zhu, Qingtian; Min, Chen; Chen, Yisong; Wang, Guoping. **AA-RMVSNet: Adaptive Aggregation Recurrent Multi-View Stereo Network**. IEEE/CVF International Conference on Computer Vision (ICCV), 2021, 6187–6196. [原始来源](https://openaccess.thecvf.com/content/ICCV2021/html/Wei_AA-RMVSNet_Adaptive_Aggregation_Recurrent_Multi-View_Stereo_Network_ICCV_2021_paper.html)。
+[12] Wang, Fangjinhua; Galliani, Silvano; Vogel, Christoph; Pollefeys, Marc. **IterMVS: Iterative Probability Estimation for Efficient Multi-View Stereo**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2022, 8606–8615. [原始来源](https://openaccess.thecvf.com/content/CVPR2022/html/Wang_IterMVS_Iterative_Probability_Estimation_for_Efficient_Multi-View_Stereo_CVPR_2022_paper.html)。
 
-[13] Ding, Yikang; Yuan, Wentao; Zhu, Qingtian; Zhang, Haotian; Liu, Xiangyue; Wang, Yuanjiang; Liu, Xiao. **TransMVSNet: Global Context-Aware Multi-View Stereo Network With Transformers**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2022, 8585–8594. [原始来源](https://openaccess.thecvf.com/content/CVPR2022/html/Ding_TransMVSNet_Global_Context-Aware_Multi-View_Stereo_Network_With_Transformers_CVPR_2022_paper.html)。
+[13] Peng, Rui; Wang, Rongjie; Wang, Zhenyu; Lai, Yawen; Wang, Ronggang. **Rethinking Depth Estimation for Multi-View Stereo: A Unified Representation**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2022, 8645–8654. [原始来源](https://openaccess.thecvf.com/content/CVPR2022/html/Peng_Rethinking_Depth_Estimation_for_Multi-View_Stereo_A_Unified_Representation_CVPR_2022_paper.html)。
 
-[14] Mi, Zhenxing; Di, Chang; Xu, Dan. **Generalized Binary Search Network for Highly-Efficient Multi-View Stereo**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2022, 12991–13000. [原始来源](https://openaccess.thecvf.com/content/CVPR2022/html/Mi_Generalized_Binary_Search_Network_for_Highly-Efficient_Multi-View_Stereo_CVPR_2022_paper.html)。
+[14] Ding, Yikang; Yuan, Wentao; Zhu, Qingtian; Zhang, Haotian; Liu, Xiangyue; Wang, Yuanjiang; Liu, Xiao. **TransMVSNet: Global Context-Aware Multi-View Stereo Network With Transformers**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2022, 8585–8594. [原始来源](https://openaccess.thecvf.com/content/CVPR2022/html/Ding_TransMVSNet_Global_Context-Aware_Multi-View_Stereo_Network_With_Transformers_CVPR_2022_paper.html)。
 
-[15] Peng, Rui; Wang, Rongjie; Wang, Zhenyu; Lai, Yawen; Wang, Ronggang. **Rethinking Depth Estimation for Multi-View Stereo: A Unified Representation**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2022, 8645–8654. [原始来源](https://openaccess.thecvf.com/content/CVPR2022/html/Peng_Rethinking_Depth_Estimation_for_Multi-View_Stereo_A_Unified_Representation_CVPR_2022_paper.html)。
+[15] Zhang, Zhe; Peng, Rui; Hu, Yuxi; Wang, Ronggang. **GeoMVSNet: Learning Multi-View Stereo With Geometry Perception**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2023. [原始来源](https://openaccess.thecvf.com/content/CVPR2023/papers/Zhang_GeoMVSNet_Learning_Multi-View_Stereo_With_Geometry_Perception_CVPR_2023_paper.pdf)。
 
-[16] Wang, Fangjinhua; Galliani, Silvano; Vogel, Christoph; Pollefeys, Marc. **IterMVS: Iterative Probability Estimation for Efficient Multi-View Stereo**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2022, 8606–8615. [原始来源](https://openaccess.thecvf.com/content/CVPR2022/html/Wang_IterMVS_Iterative_Probability_Estimation_for_Efficient_Multi-View_Stereo_CVPR_2022_paper.html)。
+[16] Wu, Jiang; Li, Rui; Xu, Haofei; Zhao, Wenxun; Zhu, Yu; Sun, Jinqiu; Zhang, Yanning. **GoMVS: Geometrically Consistent Cost Aggregation for Multi-View Stereo**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2024, 20207–20216. [原始来源](https://openaccess.thecvf.com/content/CVPR2024/html/Wu_GoMVS_Geometrically_Consistent_Cost_Aggregation_for_Multi-View_Stereo_CVPR_2024_paper.html)。
 
-[17] Zhang, Zhe; Peng, Rui; Hu, Yuxi; Wang, Ronggang. **GeoMVSNet: Learning Multi-View Stereo With Geometry Perception**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2023. [原始来源](https://openaccess.thecvf.com/content/CVPR2023/papers/Zhang_GeoMVSNet_Learning_Multi-View_Stereo_With_Geometry_Perception_CVPR_2023_paper.pdf)。
+[17] Vats, Vibhas K.; Joshi, Sripad; Crandall, David J.; Reza, Md. Alimoor; Jung, Soon-heung. **GC-MVSNet: Multi-View, Multi-Scale, Geometrically-Consistent Multi-View Stereo**. IEEE/CVF Winter Conference on Applications of Computer Vision (WACV), 2024, 3242–3252. [原始来源](https://openaccess.thecvf.com/content/WACV2024/html/Vats_GC-MVSNet_Multi-View_Multi-Scale_Geometrically-Consistent_Multi-View_Stereo_WACV_2024_paper.html)。
 
-[18] Wu, Jiang; Li, Rui; Xu, Haofei; Zhao, Wenxun; Zhu, Yu; Sun, Jinqiu; Zhang, Yanning. **GoMVS: Geometrically Consistent Cost Aggregation for Multi-View Stereo**. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2024, 20207–20216. [原始来源](https://openaccess.thecvf.com/content/CVPR2024/html/Wu_GoMVS_Geometrically_Consistent_Cost_Aggregation_for_Multi-View_Stereo_CVPR_2024_paper.html)。
+[18] Lin, Tsung-Yi; Goyal, Priya; Girshick, Ross; He, Kaiming; Dollár, Piotr. **Focal Loss for Dense Object Detection**. IEEE International Conference on Computer Vision (ICCV), 2017. [原始来源](https://openaccess.thecvf.com/content_iccv_2017/html/Lin_Focal_Loss_for_ICCV_2017_paper.html)。
 
-[19] Vats, Vibhas K.; Joshi, Sripad; Crandall, David J.; Reza, Md. Alimoor; Jung, Soon-heung. **GC-MVSNet: Multi-View, Multi-Scale, Geometrically-Consistent Multi-View Stereo**. IEEE/CVF Winter Conference on Applications of Computer Vision (WACV), 2024, 3242–3252. [原始来源](https://openaccess.thecvf.com/content/WACV2024/html/Vats_GC-MVSNet_Multi-View_Multi-Scale_Geometrically-Consistent_Multi-View_Stereo_WACV_2024_paper.html)。
-
----
+[19] Jensen, Rasmus; Dahl, Anders; Vogiatzis, George; Tola, Engin; Aanæs, Henrik. **Large Scale Multi-view Stereopsis Evaluation**. IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2014. [原始来源](https://openaccess.thecvf.com/content_cvpr_2014/papers/Jensen_Large_Scale_Multi-view_2014_CVPR_paper.pdf)。

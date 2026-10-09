@@ -8,6 +8,7 @@ parameters and can be loaded by this script.
 
 import argparse
 import csv
+import json
 import os
 import sys
 
@@ -49,6 +50,10 @@ def parse_args():
                         help="DTU training root containing Rectified/, Depths/ and Cameras/.")
     parser.add_argument("--testlist", required=True, help="e.g. lists/dtu/val.txt")
     parser.add_argument("--outdir", default="./outputs/region_metrics")
+    parser.add_argument('--paper_dumpdir', default=None,
+                        help='Optional actual prediction export, grouped by analysis configuration.')
+    parser.add_argument('--paper_sample_keys', default=None,
+                        help='JSON selected scan/view/light keys; limits evaluation to these samples.')
 
     parser.add_argument("--vismode", default="soft",
                         choices=["soft", "hard", "average", "uwta", "maxpool"])
@@ -225,6 +230,7 @@ def geometry_region_maps(datapath, scan, ref_view, src_views, depth,
     max_disparity = np.zeros(height * width, dtype=np.float32)
     occluded_count = np.zeros(height * width, dtype=np.uint16)
     comparable_count = np.zeros(height * width, dtype=np.uint16)
+    source_visible, source_occluded, source_supervised = [], [], []
     for src_view in src_views:
         src_k, src_ext = read_train_camera(datapath, src_view)
         transform = src_ext @ np.linalg.inv(ref_ext)
@@ -264,6 +270,10 @@ def geometry_region_maps(datapath, scan, ref_view, src_views, depth,
         comparable = in_bounds & sampled_mask & np.isfinite(sampled_depth) & (sampled_depth > 0.0)
         tolerance = np.maximum(occ_abs_tol, occ_rel_tol * sampled_depth)
         occluded = comparable & (projected_depth > sampled_depth + tolerance)
+        visible = comparable & (np.abs(projected_depth - sampled_depth) <= tolerance)
+        source_visible.append(visible)
+        source_occluded.append(occluded)
+        source_supervised.append(visible | occluded)
         comparable_count += comparable.reshape(-1).astype(np.uint16)
         occluded_count += occluded.reshape(-1).astype(np.uint16)
 
@@ -283,6 +293,9 @@ def geometry_region_maps(datapath, scan, ref_view, src_views, depth,
         "occluded_any": occluded_any,
         "occluded_majority": occluded_majority,
         "comparable_count": comparable_count,
+        "source_visible": np.stack(source_visible),
+        "source_occluded": np.stack(source_occluded),
+        "source_supervised": np.stack(source_supervised),
     }
 
 
@@ -426,6 +439,8 @@ def main():
         raise ValueError("--hypothesis_residual_scale must be non-negative")
     if variant.hypothesis_fusion and args.vismode != "soft":
         raise ValueError("factor C currently requires --vismode soft")
+    if args.paper_dumpdir and args.vismode != 'soft':
+        raise ValueError('paper fusion diagnostics currently require --vismode soft')
     if args.light != -1 and not 0 <= args.light <= 6:
         raise ValueError("--light must be -1 or in [0,6]")
 
@@ -439,6 +454,16 @@ def main():
         args.numdepth, args.interval_scale)
     if args.light >= 0:
         dataset.metas = [meta for meta in dataset.metas if int(meta[1]) == args.light]
+    if args.paper_sample_keys:
+        with open(args.paper_sample_keys, encoding='utf-8') as handle:
+            args._paper_selections = json.load(handle)
+        keys = {(x['scan'], int(x['view']), int(x.get('light', args.light)))
+                for x in args._paper_selections}
+        dataset.metas = [meta for meta in dataset.metas
+                         if (meta[0], int(meta[2]), int(meta[1])) in keys]
+        actual = {(meta[0], int(meta[2]), int(meta[1])) for meta in dataset.metas}
+        if actual != keys:
+            raise ValueError('Selected paper samples absent from dataset: {}'.format(keys - actual))
     loader = DataLoader(
         dataset, batch_size=args.batch_size, shuffle=False,
         num_workers=args.num_workers, pin_memory=True, drop_last=False)
@@ -479,7 +504,7 @@ def main():
                 break
 
             sample_cuda = to_cuda(sample)
-            outputs, _, _ = model(
+            outputs, _, confidence_maps = model(
                 sample_cuda["imgs"], sample_cuda["proj_matrices"],
                 sample_cuda["depth_values"])
             depth_gt_tensor = sample_cuda["depth"]
@@ -532,6 +557,12 @@ def main():
                     "large_disp_and_occluded": large_disparity & occluded_any,
                     "boundary_and_occluded": boundary & occluded_any,
                 }
+
+                if args.paper_dumpdir:
+                    from tools.paper_dump import dump_sample
+                    dump_sample(args, sample, batch_item, outputs, depth_gt, depth_est,
+                                valid, cached_geometry, region_masks, range_masks, range_widths,
+                                dataset.metas[sample_index], confidence_maps)
 
                 for region, region_mask in region_masks.items():
                     result = metrics(

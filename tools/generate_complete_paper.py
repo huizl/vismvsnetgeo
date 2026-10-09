@@ -9,6 +9,10 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import FancyBboxPatch
+try:
+    from .paper_method_revision import revise_manuscript
+except ImportError:
+    from paper_method_revision import revise_manuscript
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,7 +29,7 @@ CONFIGS = (
     ("oa", "Base+A+B", 1, 1, 0),
     ("oa_full", "Base+A+C", 1, 0, 1),
     ("hyp", "Base+B+C", 0, 1, 1),
-    ("oa_hyp", "Ours (A+B+C)", 1, 1, 1),
+    ("oa_hyp", "Base+A+B+C", 1, 1, 1),
 )
 
 SERIES = (
@@ -192,21 +196,21 @@ def save_framework():
 
     # Coarse-to-fine backbone.
     box(0.25, 6.55, 1.55, 1.0, "$I_0,\{I_s\}$\n参考/源图像", "#e2e8f0", 10)
-    box(2.15, 6.35, 1.75, 1.4, "2D U-Net\n共享特征金字塔\n$F^{1/8},F^{1/4},F^{1/2}$", "#e2e8f0", 9.5)
+    box(2.15, 6.35, 1.75, 1.4, "2D U-Net\n共享特征金字塔\n$\\phi^{1/8},\\phi^{1/4},\\phi^{1/2}$", "#e2e8f0", 9.5)
     arrow(1.8, 7.05, 2.15, 7.05)
     stage_x = (4.45, 8.55, 12.65)
     stage_colors = ("#f8fafc", "#fff7ed", "#fff7ed")
-    stage_scales = ("$F^{1/8}$", "$F^{1/4}$", "$F^{1/2}$")
+    stage_scales = ("$\\phi^{1/8}$", "$\\phi^{1/4}$", "$\\phi^{1/2}$")
     for idx, (x, color, scale) in enumerate(zip(stage_x, stage_colors, stage_scales), 1):
         box(x, 6.15, 3.3, 1.8,
-            f"Stage {idx} · {scale}\n逐源匹配 $C_{{s}}^{idx}$ → 隐变量 $V_{{s}}^{idx}$\nC 融合 → 正则化 → $P^{idx},D^{idx},\\sigma^{idx}$",
+            f"Stage {idx} · {scale}\n逐源匹配 $F_{{s}}^{idx}$ → 隐变量 $V_{{s}}^{idx}$\nC 融合 → 正则化 → $P^{idx},\\hat d^{idx},\\sigma^{idx}$",
             color, 9.2, "#475569", 1.4)
         if idx == 1:
             arrow(3.9, 7.05, x, 7.05, "#64748b")
-    box(16.3, 6.55, 1.45, 1.0, "最终深度\n$D^3$", "#dbeafe", 10)
+    box(16.3, 6.55, 1.45, 1.0, "最终深度\n$\\hat d^3$", "#dbeafe", 10)
     arrow(15.95, 7.05, 16.3, 7.05)
-    box(7.55, 8.1, 1.7, 0.48, "B：$D^1,\sigma^1\\rightarrow\{d_k^2\}$", "#ffedd5", 8.4, "#d97706")
-    box(11.65, 8.1, 1.7, 0.48, "B：$D^2,\sigma^2\\rightarrow\{d_k^3\}$", "#ffedd5", 8.4, "#d97706")
+    box(7.55, 8.1, 1.7, 0.48, "B：$\\hat d^1,\\sigma^1\\rightarrow\\{d_k^2\\}$", "#ffedd5", 8.4, "#d97706")
+    box(11.65, 8.1, 1.7, 0.48, "B：$\\hat d^2,\\sigma^2\\rightarrow\\{d_k^3\\}$", "#ffedd5", 8.4, "#d97706")
     arrow(7.75, 7.05, 8.55, 7.05, "#d97706", lw=1.8)
     arrow(11.85, 7.05, 12.65, 7.05, "#d97706", lw=1.8)
 
@@ -215,24 +219,24 @@ def save_framework():
                                 facecolor="#ffffff", edgecolor="#94a3b8", linewidth=1.4))
     ax.text(0.5, 5.28, "Stage $t$ 内部结构（三级共享此数据流）", fontsize=12.2, weight="bold", color="#1e293b")
 
-    box(0.45, 3.65, 1.4, 0.75, "$F_0^t,F_s^t$\n$\{d_k^t\}$", "#e2e8f0", 9)
+    box(0.45, 3.65, 1.4, 0.75, "$\\phi_0^t,\\phi_s^t$\n$\\{d_k^t\\}$", "#e2e8f0", 9)
     box(2.15, 3.55, 1.75, 0.95, "单应变换 H\n组相关 GWC", "#e0f2fe", 9)
-    box(4.2, 3.55, 1.55, 0.95, "逐源代价体\n$C_s^t(p,k)$", "#e0f2fe", 9)
-    box(6.05, 3.55, 1.65, 0.95, "第一步 3D 正则化\n$C_s^t\\rightarrow V_s^t$", "#dcfce7", 8.7)
+    box(4.2, 3.55, 1.55, 0.95, "逐源代价体\n$F_s^t(p,k)$", "#e0f2fe", 9)
+    box(6.05, 3.55, 1.65, 0.95, "第一步 3D 正则化\n$F_s^t\\rightarrow V_s^t$", "#dcfce7", 8.7)
     for x1, x2 in ((1.85, 2.15), (3.9, 4.2), (5.75, 6.05)):
         arrow(x1, 4.02, x2, 4.02)
 
     box(8.05, 4.25, 1.55, 0.75, "$V_s^t\\rightarrow P_s^t$\nSoftmax", "#dcfce7", 8.7)
-    box(10.0, 4.25, 1.55, 0.75, "成对深度 $D_s^t$\n不确定性 $U_s^t$", "#dbeafe", 8.7)
+    box(10.0, 4.25, 1.55, 0.75, "成对深度 $\\hat d_s^t$\n熵 $E_s^t$ → $u_s^t,z_s^t$", "#dbeafe", 8.2)
     arrow(7.7, 4.32, 8.05, 4.58)
     arrow(9.6, 4.62, 10.0, 4.62)
 
-    box(8.05, 2.75, 1.55, 0.82, "原始不确定性可靠性\n$b_s^t(p)=-\log U_s^t(p)$", "#ccfbf1", 8.1)
-    box(10.0, 2.75, 1.65, 0.82, "假设残差\n$r_{s,k}^t=g(F_s^t,d_k^t)$", "#ccfbf1", 8.2)
-    box(12.0, 3.0, 1.6, 1.25, "C：假设感知融合\n$\ell_{s,k}=b_s+r_{s,k}$\n$w_{s,k}=\\mathrm{softmax}_s(\ell)$", "#ccfbf1", 8.4, "#0f766e", 1.7)
+    box(8.05, 2.75, 1.55, 0.82, "基础可靠性 logit\n$-u_s^t(p)$", "#ccfbf1", 8.1)
+    box(10.0, 2.75, 1.65, 0.82, "候选相关残差\n$r_s^t=\\eta_t\\tanh g_C^t(J_s^t)$", "#ccfbf1", 8.0)
+    box(12.0, 3.0, 1.6, 1.25, "C：假设感知融合\n$\\ell_{s,k}=-u_s+r_{s,k}$\n$w_{s,k}=\\mathrm{softmax}_s(\\ell)$", "#ccfbf1", 8.2, "#0f766e", 1.7)
     box(13.95, 3.2, 1.15, 0.85, "融合体\n$V^t=\sum_s w_{s,k}V_s^t$", "#dcfce7", 8.1)
     box(15.45, 3.2, 1.05, 0.85, "第二步\n3D 正则化", "#dcfce7", 8.2)
-    box(16.78, 3.0, 0.72, 1.25, "$P^t$\n$D^t$\n$\sigma^t$", "#dbeafe", 8.5)
+    box(16.78, 3.0, 0.72, 1.25, "$P^t$\n$\\hat d^t$\n$\\sigma^t$", "#dbeafe", 8.5)
     arrow(7.7, 3.88, 12.0, 3.88, "#0f766e")
     arrow(10.8, 4.25, 8.82, 3.57, "#0f766e")
     arrow(9.6, 3.16, 12.0, 3.47, "#0f766e")
@@ -243,14 +247,17 @@ def save_framework():
 
     box(2.25, 1.15, 1.75, 0.82, "参考/源 GT 深度\n相机参数", "#dbeafe", 8.8)
     box(4.35, 1.05, 1.9, 1.02, "几何重投影与\n深度一致性判定\n$v_s,o_s,m_s$", "#dbeafe", 8.5)
-    box(6.65, 1.05, 1.75, 1.02, "A：可见性预测\n$q_s=h_A(F_s^t)$\n$\\mathcal{L}_A^t$", "#dbeafe", 8.5, "#2563eb", 1.7)
+    box(6.65, 1.05, 1.75, 1.02, "A：熵编码可见性头\n$E_s^t\\rightarrow H_s^t\\rightarrow q_s^t$\n$\\mathcal{L}_A^t$", "#dbeafe", 8.0, "#2563eb", 1.7)
     arrow(4.0, 1.56, 4.35, 1.56, "#2563eb", "--")
     arrow(6.25, 1.56, 6.65, 1.56, "#2563eb", "--")
-    arrow(7.55, 2.07, 6.9, 3.55, "#2563eb", "--")
+    # Keep the supervision line outside the reliability/residual boxes.
+    ax.plot([7.55,7.55,9.78,9.78], [2.07,2.43,2.43,4.43],
+            color="#2563eb",linestyle="--",linewidth=1.1)
+    arrow(9.78,4.43,10.0,4.43,"#2563eb","--",1.1)
 
-    box(10.15, 1.05, 2.05, 1.02, "B：前级概率状态\n$\mu^t=D^{t-1},\ s^t=\sigma^{t-1}$", "#ffedd5", 8.5, "#d97706", 1.7)
-    box(12.55, 1.05, 2.05, 1.02, "$h^t=\\mathrm{clip}(\kappa_ts^t)$\n$[a^t,b^t]\cap[d_{min},d_{max}]$", "#ffedd5", 8.2, "#d97706")
-    box(14.95, 1.05, 2.05, 1.02, "候选采样\n$d_k^t=a^t+\\frac{k}{N_t-1}(b^t-a^t)$", "#ffedd5", 8.0, "#d97706")
+    box(10.15, 1.05, 2.05, 1.02, "B：对齐前级均值/标准差\n$\\mu^t=\\hat d^{t-1},\\ s^t=\\sigma^{t-1}$", "#ffedd5", 8.2, "#d97706", 1.7)
+    box(12.55, 1.05, 2.05, 1.02, "$h^t=\\mathrm{clip}(\\kappa_ts^t)$\n$[d_-^t,d_+^t]\\subseteq[d_{min},d_{max}]$", "#ffedd5", 8.2, "#d97706")
+    box(14.95, 1.05, 2.05, 1.02, "候选采样\n$d_k^t=d_-^t+\\frac{k}{N_t-1}(d_+^t-d_-^t)$", "#ffedd5", 7.5, "#d97706")
     arrow(12.2, 1.56, 12.55, 1.56, "#d97706")
     arrow(14.6, 1.56, 14.95, 1.56, "#d97706")
     # Route B's candidate output around the stage inset instead of drawing a
@@ -298,13 +305,13 @@ def save_module_details():
     box(ax, 5.7, 8.0, 3.8, 1.0, "相机参数\n$K_0,K_s,R_{s0},t_{s0}$", colors[0], edges[0])
     box(ax, 2.3, 6.1, 5.4, 1.1, "将参考三维点投影到源视图\n$p_s^*=\pi(K_sX_s(p,G_0(p)))$", colors[0], edges[0])
     arrow(ax, 2.2, 8.0, 3.8, 7.2, edges[0]); arrow(ax, 7.6, 8.0, 6.3, 7.2, edges[0])
-    box(ax, 2.3, 4.25, 5.4, 1.1, "比较投影深度 $z_s$ 与采样深度 $G_s(p_s^*)$\n容差 $\\tau_s=\max(\\tau_a,\\tau_rG_s)$", colors[0], edges[0])
+    box(ax, 2.3, 4.25, 5.4, 1.1, "比较投影深度 $Z_s$ 与采样深度 $G_s(p_s^*)$\n容差 $\\tau_s=\\max(\\tau_a,\\tau_rG_s)$", colors[0], edges[0])
     arrow(ax, 5.0, 6.1, 5.0, 5.35, edges[0])
     box(ax, 0.45, 2.25, 2.65, 1.05, "可见\n$v_s=1$", "#dcfce7", edges[0])
     box(ax, 3.68, 2.25, 2.65, 1.05, "遮挡\n$o_s=1$", "#fee2e2", edges[0])
     box(ax, 6.9, 2.25, 2.65, 1.05, "无效\n$m_s=0$", "#f1f5f9", edges[0])
     for x in (1.78, 5.0, 8.22): arrow(ax, 5.0, 4.25, x, 3.3, edges[0])
-    box(ax, 1.75, 0.4, 6.5, 1.05, "匹配特征 $F_s^t$ → 可见性头 $q_s^t$\n$\\mathcal{L}_A^t=\sum m_s\ell_{vis}(q_s,v_s)/\sum m_s$", colors[0], edges[0])
+    box(ax, 1.75, 0.4, 6.5, 1.05, "成对熵 $E_s^t$ → 编码 $H_s^t$ → $q_s^t$\n$\\mathcal{L}_A^t$: 类别平衡 Focal BCE，式(6)-(7)", colors[0], edges[0], 8.5)
     arrow(ax, 5.0, 2.25, 5.0, 1.45, edges[0])
 
     # B
@@ -316,9 +323,9 @@ def save_module_details():
     arrow(ax, 5.0, 8.0, 2.8, 7.3, edges[1]); arrow(ax, 5.0, 8.0, 7.2, 7.3, edges[1])
     box(ax, 1.0, 4.55, 8.0, 1.0, "范围半宽\n$h^t=\\mathrm{clip}(\kappa_ts^t,h_{min}^t,h_{max}^t)$", colors[1], edges[1])
     arrow(ax, 2.8, 6.3, 4.3, 5.55, edges[1]); arrow(ax, 7.2, 6.3, 5.7, 5.55, edges[1])
-    box(ax, 1.0, 2.8, 8.0, 1.0, "边界求交\n$a^t=\max(d_{min},\mu^t-h^t),\quad b^t=\min(d_{max},\mu^t+h^t)$", colors[1], edges[1], 8.6)
+    box(ax, 1.0, 2.8, 8.0, 1.0, "边界求交\n$d_-^t=\\max(d_{min},\\mu^t-h^t),\\quad d_+^t=\\min(d_{max},\\mu^t+h^t)$", colors[1], edges[1], 8.1)
     arrow(ax, 5.0, 4.55, 5.0, 3.8, edges[1])
-    box(ax, 1.0, 1.0, 8.0, 1.0, "均匀生成 $N_t$ 个候选\n$d_k^t=a^t+\\frac{k}{N_t-1}(b^t-a^t)$", colors[1], edges[1])
+    box(ax, 1.0, 1.0, 8.0, 1.0, "均匀生成 $N_t$ 个候选\n$d_k^t=d_-^t+\\frac{k}{N_t-1}(d_+^t-d_-^t)$", colors[1], edges[1])
     arrow(ax, 5.0, 2.8, 5.0, 2.0, edges[1])
     ax.text(5, 0.35, "高不确定像素保留纠错范围；可靠像素维持细粒度采样", ha="center", fontsize=8.7, color=edges[1])
 
@@ -326,11 +333,11 @@ def save_module_details():
     ax = axes[2]
     setup(ax, "(c) C：深度假设感知源视图融合", edges[2])
     box(ax, 0.4, 8.0, 2.8, 1.0, "逐源隐变量\n$V_s^t(p,k)$", colors[2], edges[2])
-    box(ax, 3.6, 8.0, 2.8, 1.0, "原始不确定性可靠性\n$b_s^t(p)=-\log U_s^t(p)$", colors[2], edges[2], 8.4)
-    box(ax, 6.8, 8.0, 2.8, 1.0, "候选匹配特征\n$F_s^t(p,k),d_k^t$", colors[2], edges[2])
-    box(ax, 5.1, 6.25, 4.5, 1.0, "假设级残差\n$r_{s,k}^t=\eta_t\\tanh(g_t(F_s^t,d_k^t))$", colors[2], edges[2], 8.5)
+    box(ax, 3.6, 8.0, 2.8, 1.0, "基础可靠性 logit\n$-u_s^t(p)$", colors[2], edges[2], 8.4)
+    box(ax, 6.8, 8.0, 2.8, 1.0, "11 通道候选特征\n$J_s^t=[V_s^t,\\tanh a_s^t,P_s^t,\\xi^t]$", colors[2], edges[2], 7.5)
+    box(ax, 5.1, 6.25, 4.5, 1.0, "3D 卷积 + GN + ReLU + 1×1×1\n$r_{s,k}^t=\\eta_t\\tanh(g_C^t(J_s^t))$", colors[2], edges[2], 8.0)
     arrow(ax, 8.2, 8.0, 7.4, 7.25, edges[2])
-    box(ax, 2.25, 4.55, 5.5, 1.0, "候选相关 logit\n$\ell_{s,k}^t=b_s^t(p)+r_{s,k}^t(p)$", colors[2], edges[2])
+    box(ax, 2.25, 4.55, 5.5, 1.0, "候选相关 logit\n$\\ell_{s,k}^t=-u_s^t(p)+r_{s,k}^t(p)$", colors[2], edges[2])
     arrow(ax, 5.0, 8.0, 4.5, 5.55, edges[2]); arrow(ax, 7.35, 6.25, 5.8, 5.55, edges[2])
     box(ax, 2.25, 2.85, 5.5, 1.0, "源视图维归一化\n$w_{s,k}^t=\\mathrm{softmax}_s(\ell_{s,k}^t)$", colors[2], edges[2])
     arrow(ax, 5.0, 4.55, 5.0, 3.85, edges[2])
@@ -630,7 +637,7 @@ A、B、C 分别表示逐源视图遮挡感知监督、自适应深度搜索范�
 
     paper = introduction.rstrip() + "\n\n" + method.rstrip() + "\n\n" + experiment.rstrip() + "\n\n"
     paper += "\n".join(appendix_parts).rstrip() + "\n\n" + references + "\n"
-    OUTPUT.write_text(paper, encoding="utf-8")
+    OUTPUT.write_text(revise_manuscript(paper), encoding="utf-8")
     print(OUTPUT)
     for path in sorted(ASSETS.glob("*.png")):
         print(path)
