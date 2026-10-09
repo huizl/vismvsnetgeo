@@ -1,4 +1,6 @@
-# 论文可视化与服务器运行指南
+# 论文可视化与服务器运行指南（历史版）
+
+当前默认流程已改为三类困难场景的整图对比，只比较 Base 与 Base+A+B+C，不再生成 R1/R2。请使用 [新版运行指南](PAPER_SCENE_VISUALIZATION_GUIDE.md)。以下 ROI 与两行五列内容记录旧版流程，不适用于当前默认渲染。
 
 ## 1. 需要哪些图，以及各自支持什么结论
 
@@ -103,7 +105,7 @@ python tools/visualize_paper_results.py render \
   --cdf_max 30
 ```
 
-误差图显示 0–20 mm，差值图显示 ±10 mm。差值为 Base 绝对误差减 Ours 绝对误差，蓝色表示改善、红色表示退化、白色表示无变化；GT 无效位置为黑色。超出范围只截断显示颜色，不截断指标；实际原数组与 CSV 保留原值。若画局部细节需要较小色标，在同一 scene 上统一修改 `--error_max`。同一张总览、独立子图和局部图使用完全相同的颜色映射，局部图直接裁剪全图栅格。
+常规总览误差图显示 0–20 mm，差值图显示 ±10 mm。差值为 Base 绝对误差减 Ours 绝对误差，蓝色表示改善、红色表示退化、白色表示无变化；GT 无效位置为黑色。超出范围只截断显示颜色，不截断指标；实际原数组与 CSV 保留原值。总览、常规独立子图和 `zoom_2x5` 使用相同颜色映射，局部图直接裁剪全图栅格。另存的 `detail_comparison` 使用明确标注的更细色标：误差 0–5 mm、差值 ±2 mm，同一条图中的 Base/Ours 始终共享色标，指标仍使用未截断的误差。
 
 已有 `Base/样本/arrays.npz` 和 `Base+A+B+C/样本/arrays.npz` 时，只运行 render 即可，无需重新 export，不需要 GPU。`--layout paper` 是默认值，不要求八组，也不需要 `--allow_partial`。旧版定性图使用 `--layout ablation`，部分配置还需 `--allow_partial`。
 
@@ -127,7 +129,11 @@ python tools/visualize_paper_results.py render \
 ]
 ```
 
-坐标相对于导出 GT/预测图分辨率；ROI 为整数 `[x0,y0,x1,y1]`，右下端不包含，probe 为 `[x,y]`。上述 scan 与坐标仅是格式示例，需选择实际测试集中存在且图像内有效的位置。没有指定 ROI 时，从固定 GT 的大视差、多数遮挡、大视差与遮挡交集分别选中心附近的实际困难像素，生成最多三个 160×120 裁剪，重复裁剪合并。这是默认定位辅助，投稿前应检查选区是否展示了有效物体细节。GT 图、困难掩码及评测区域不因选区改变。
+坐标相对于导出 GT/预测图分辨率；ROI 为整数 `[x0,y0,x1,y1]`，右下端不包含，probe 为 `[x,y]`。上述 scan 与坐标仅是格式示例，需选择实际测试集中存在且图像内有效的位置。R1、R2、R3 分别是第 1、2、3 个 ROI（局部观察框），不是模型模块或阶段。
+
+没有指定 ROI 时，裁剪宽、高默认取导出图像对应尺寸的 30%，上限分别为 160、120 像素。例如 160×128 的预测图，默认裁剪为 48×38，而不是覆盖几乎全图的 160×120。先在固定 GT 困难区域与 GT 边界的交集中找连通区域，按区域大小选代表像素；没有边界交集则使用困难区域本身。最多选三个框，IoU 超过 0.5 时尝试其他连通区域，避免高度重叠。选区不使用预测误差或改善幅度排序，GT 图、困难掩码及评测区域不改变。GT 边界不等于物体分割，自动框仍需人工检查。
+
+可以用 `--roi_fraction 0.25` 进一步缩小自动框。常规局部图标题明确区分“ROI 所有有效像素指标”和“ROI 内目标困难掩码指标”，避免把整个框的指标误认为纯遮挡或纯大视差指标。额外的 `detail_comparison.png/.pdf` 为一行五列：RGB、GT、Base 误差、Ours 误差、误差改善；独立细节子图位于 `detail_panels/`。其较细色标通过 `--detail_error_max`、`--detail_gain_max` 调整，并记录到 `display_settings.json`。
 
 调整 ROI 后只需以下命令，render 会读取 selection 覆盖缓存中的裁剪位置，并仅处理 selection 中的样本：
 
@@ -169,8 +175,11 @@ outputs/paper_visualizations/View5/
       with_legend/各子图.png / .pdf
     roi_01/
       zoom_2x5.png / .pdf
+      detail_comparison.png / .pdf
       panels/上述十张局部子图.png
       panels/with_legend/上述十张局部子图.png / .pdf
+      detail_panels/五张细节子图.png
+      detail_panels/with_legend/五张细节子图.png / .pdf
       metrics.csv
     roi_02/...
     roi_03/...

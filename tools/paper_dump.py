@@ -30,6 +30,10 @@ def dump_sample(args, sample, batch_item, outputs, depth_gt, depth_est,
     rgb = cv2.resize(rgb, (w, h), interpolation=cv2.INTER_LINEAR)
     arrays = dict(rgb=rgb, gt=depth_gt, pred=depth_est, valid=valid,
                   disparity=geometry['disparity'], occlusion_ratio=geometry['occlusion_ratio'])
+    # Region geometry may use a different source count from inference.
+    arrays['occluded_count'] = np.where(valid, geometry['source_occluded'].sum(axis=0), 0).astype(np.uint16)
+    if 'comparable_count' in geometry:
+        arrays['comparable_count'] = geometry['comparable_count']
     arrays.update({'mask_' + name: value for name, value in region_masks.items()})
     # Ground-truth labels are diagnostic only and never influence inference.
     from tools.eval_region_metrics_dtu_yao import geometry_region_maps
@@ -95,6 +99,7 @@ def dump_sample(args, sample, batch_item, outputs, depth_gt, depth_est,
         'scan': scan, 'view': ref, 'light': light, 'source_views': src[:args.eval_nviews-1],
         'region_source_views': src[:args.region_nviews-1], 'shape': [h, w],
         'probe': probe, 'roi': target.get('roi'), 'rois': target.get('rois'),
+        'scene_categories': target.get('scene_categories'),
         'selection_reason': target.get('reason', 'manual'),
         'gt_valid_at_probe': bool(valid[probe[1], probe[0]]),
         'depth_unit': 'mm', 'width_unit': 'original_depth_interval',

@@ -5,6 +5,7 @@ stats: plots and neutral sample selection from all eight CSV configurations.
 export: invoke the existing evaluator with actual checkpoints on a server.
 render: shared-scale depth/error/coverage panels from exported NPZs.
 verify: inspect cached export metrics against the original CSV, without inference.
+select: choose three difficulty categories using full-test-set GT geometry.
 """
 from __future__ import annotations
 
@@ -627,32 +628,44 @@ def render(args,series):
     if not groups: raise FileNotFoundError('No exported arrays; run export on actual checkpoints first')
     if selections is not None and set(selections) - set(groups):
         raise FileNotFoundError('Selected samples have no cached arrays: '+str(sorted(set(selections)-set(groups))))
+    scene_records = []
     for key,files in sorted(groups.items()):
         if 'Base' not in files: raise ValueError(f'{key}: Base missing')
         if layout == 'paper':
             if 'Base+A+B+C' not in files: raise ValueError(f'{key}: complete model Base+A+B+C missing')
             from tools.paper_qualitative import render_paper_sample
-            render_paper_sample(args, series, key, files, selections.get(key) if selections is not None else None)
+            scene_records.append(render_paper_sample(args, series, key, files,
+                                 selections.get(key) if selections is not None else None))
         else:
             if len(files)!=8 and not args.allow_partial: raise ValueError(f'{key}: missing configurations; use --allow_partial for diagnostics only')
             render_sample(args,series,key,files)
+    if scene_records:
+        from tools.paper_qualitative import CATEGORIES
+        write_csv(folder/'scenes'/'rendered_scene_index.csv',
+                  [{**r, 'scene_categories': ','.join(r['scene_categories'])} for r in scene_records])
+        coverage = {c: sum(c in r['scene_categories'] for r in scene_records) for c in CATEGORIES}
+        (folder/'scenes'/'category_coverage.json').write_text(json.dumps(coverage,indent=2),encoding='utf-8')
+        print(f'{series}: scene-category coverage: {coverage}',flush=True)
+        if not all(coverage.values()):
+            print('Some categories lack eligible cached cases. Use select --testpath, then export scene_selection.json.',flush=True)
 
 
 def main():
     plt.rcParams.update({'font.size':9,'pdf.fonttype':42,'ps.fonttype':42,'axes.spines.top':False,'axes.spines.right':False})
     parser=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('command',choices=['stats','export','render','verify'])
+    parser.add_argument('command',choices=['stats','export','render','verify','select'])
     parser.add_argument('--eval_root',default=str(ROOT/'eval'))
     parser.add_argument('--outdir',default=str(ROOT/'outputs'/'paper_visualizations'))
     parser.add_argument('--series',choices=['all','View5','View3'],default='all')
-    parser.add_argument('--selection',help='JSON with scan/view/light, optional roi/rois/probe; also filters rendered samples')
+    parser.add_argument('--selection',help='JSON with scan/view/light, optional scene_categories/probe; also filters rendered samples')
+    parser.add_argument('--examples_per_category',type=int,default=2,help='GT selection: distinct scans per difficulty category')
     parser.add_argument('--checkpoint_root',help='Relocate CSV checkpoint folder under this root')
     parser.add_argument('--checkpoint_manifest',help='JSON keyed by Base, Base+A, ..., paths to actual checkpoints')
     parser.add_argument('--eval_args_json',help='Explicit evaluator parameters used in original CSV run')
     parser.add_argument('--testpath'); parser.add_argument('--testlist',default=str(ROOT/'lists'/'dtu'/'test.txt'))
     parser.add_argument('--configs',nargs='+',choices=list(BY_NAME))
     parser.add_argument('--layout',choices=['paper','ablation'],default='paper',
-                        help='render: Base/Ours overview and separate panels (default), or legacy ablation figures')
+                        help='render: Base/ABC full-scene overview and separate panels (default), or legacy ablation figures')
     parser.add_argument('--batch_size',type=int,default=1); parser.add_argument('--num_workers',type=int,default=4)
     parser.add_argument('--verify_atol',type=float,default=1e-3)
     parser.add_argument('--verify_rtol',type=float,default=1e-4)
@@ -664,11 +677,16 @@ def main():
     args=parser.parse_args()
     if args.command=='export' and (not args.testpath or args.series=='all'):
         parser.error('export requires --testpath and one explicit --series View5 or View3')
+    if args.command=='select' and not args.testpath: parser.error('select requires --testpath for fixed GT geometry')
+    if args.examples_per_category <= 0: parser.error('--examples_per_category must be positive')
     if min(args.error_max,args.gain_max,args.cdf_max)<=0: parser.error('Plot bounds must be positive')
     if args.verify_atol < 0 or args.verify_rtol < 0: parser.error('Verification tolerances must be nonnegative')
     series=list(SERIES) if args.series=='all' else [args.series]
     for s in series:
         if args.command=='stats': stat_figures(args,s)
+        elif args.command=='select':
+            from tools.paper_qualitative import select_from_dtu
+            select_from_dtu(args,s)
         elif args.command=='render': render(args,s)
         elif args.command=='verify':
             for name in args.configs or ['Base','Base+A+B+C']:

@@ -15,10 +15,94 @@ from tools.paper_dump import dump_sample
 from tools.paper_method_revision import renumber_references
 from tools.check_paper_integrity import check
 from tools.visualize_paper_results import add_deltas, factor_rows, region_rows, render_sample, verify_export
-from tools.paper_qualitative import render_paper_sample, resolve_rois
+from tools.paper_qualitative import (render_paper_sample, occlusion_count, scene_descriptor,
+                                     category_scores, select_scene_examples, select_from_dtu, yellow_contours)
 
 
 class PaperVisualizationTest(unittest.TestCase):
+    def test_cpu_scene_selection_checks_gt_and_covers_three_categories(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            valid = np.ones((20,50),dtype=bool)
+            large = np.zeros_like(valid); large[:4]=True
+            occlusions = []
+            for start, end in ((980,1000),(500,850),(0,120)):
+                mask = np.zeros_like(valid); mask.flat[start:end]=True
+                occlusions.append(mask)
+            occlusions[2].flat[500:680]=True
+            metas = [(f'scan{i}',3,0,[1,2,3,4]) for i in range(1,4)]
+            original = {}
+            for scan,light,ref,sources in metas:
+                folder = root/'data'/'Depths'/f'{scan}_train'; folder.mkdir(parents=True)
+                Image.new('L',(50,20),255).save(folder/'depth_visual_0000.png')
+                original[(scan,ref,light,'full')]={'pixels':1000}
+                original[(scan,ref,light,'large_disparity')]={'pixels':200}
+            protocol = {'Base':{'full':{'eval_nviews':5,'region_nviews':5}}}
+            args = SimpleNamespace(eval_root='unused',testpath=str(root/'data'),testlist='unused',
+                                   eval_args_json=None,outdir=str(root/'out'),examples_per_category=1)
+            def geometry(_path,scan,*_args):
+                occ = occlusions[int(scan[4:])-1]
+                return dict(disparity=np.ones_like(valid,dtype=float)*20,
+                            source_occluded=np.stack([occ,occ,~valid,~valid]))
+            with patch('tools.visualize_paper_results.load_series',return_value=({'Base':original},protocol)), \
+                 patch('datasets.dtu_yao.MVSDataset',return_value=SimpleNamespace(metas=metas)), \
+                 patch('tools.eval_region_metrics_dtu_yao.read_dtu_depth',return_value=np.ones_like(valid,dtype=float)), \
+                 patch('tools.eval_region_metrics_dtu_yao.geometry_region_maps',side_effect=geometry), \
+                 patch('tools.eval_region_metrics_dtu_yao.percentile_mask',return_value=large):
+                select_from_dtu(args,'View5')
+                selected = json.loads((root/'out'/'View5'/'scene_selection.json').read_text())
+                self.assertEqual(len(selected),3)
+                self.assertEqual([r['scene_categories'][0] for r in selected],
+                                 ['large_disparity_dominant','occlusion_dominant','joint_difficulty'])
+                original[('scan1',0,3,'full')]['pixels']=999
+                with self.assertRaisesRegex(ValueError,'GT validity'):
+                    select_from_dtu(args,'View5')
+
+    def test_count_ge2_is_not_majority_and_uses_region_source_ids(self):
+        labels = np.array([[[1, 0]], [[0, 1]], [[0, 1]]], dtype=bool)
+        arrays = dict(gt=np.ones((1,2)), valid=np.ones((1,2),dtype=bool), source_occluded=labels)
+        count = occlusion_count(arrays, {'source_views':[1,2,3], 'region_source_views':[1,2]})
+        np.testing.assert_array_equal(count, [[1,1]])
+        count = occlusion_count(arrays, {'source_views':[1,2,3], 'region_source_views':[1,2,3]})
+        np.testing.assert_array_equal(count, [[1,2]])
+        # Pixel 0 could be 'majority' when only its one occluded view is comparable,
+        # but cannot be in the mask requiring at least two occluded views.
+        self.assertFalse((count>=2)[0,0])
+        self.assertTrue((count>=2)[0,1])
+        with self.assertRaises(ValueError):
+            occlusion_count(arrays, {'source_views':[1,2,3], 'region_source_views':[4]})
+
+    def test_three_scene_categories_selected_by_geometry(self):
+        records = []
+        for i, (complex_fraction, joint_large, joint_occ, joint_fraction) in enumerate(
+                ((.02,.02,.20,.004),(.35,.10,.05,.02),(.30,.60,.40,.12)), 1):
+            records.append(dict(scan=f'scan{i}', view=0, light=3, large_disparity_pixels=200,
+                                occluded_ge2_pixels=round(complex_fraction*1000),
+                                joint_ge2_pixels=round(joint_fraction*1000),
+                                occluded_ge2_fraction=complex_fraction, joint_fraction_of_large=joint_large,
+                                joint_fraction_of_occlusion=joint_occ, joint_ge2_fraction=joint_fraction,
+                                disparity_p80_px=20., base_abs=999., ours_abs=1000.))
+        selected = select_scene_examples(records,1)
+        self.assertEqual([r['scene_categories'] for r in selected],
+                         [['large_disparity_dominant'],['occlusion_dominant'],['joint_difficulty']])
+        for r in records: r.update(base_abs=1., ours_abs=0.)
+        self.assertEqual([r['scene_categories'] for r in select_scene_examples(records,1)],
+                         [r['scene_categories'] for r in selected])
+        with self.assertRaises(ValueError): select_scene_examples(records[:1],1)
+        ambiguous = {**records[1], 'joint_ge2_pixels':100,'joint_ge2_fraction':.1,
+                     'joint_fraction_of_large':.5,'joint_fraction_of_occlusion':.25}
+        self.assertEqual(set(category_scores(ambiguous)), {'joint_difficulty'})
+
+    def test_yellow_contours_do_not_change_metric_arrays(self):
+        image = np.full((12,14,3),100,dtype=np.uint8)
+        large = np.zeros((12,14),dtype=bool); large[2:6,2:6]=True
+        complex_occ = np.zeros_like(large); complex_occ[7:11,8:12]=True
+        marked = yellow_contours(image,large,complex_occ)
+        self.assertEqual(tuple(marked[2,2]),(255,255,0))
+        self.assertEqual(tuple(marked[7,8]),(255,255,0))
+        self.assertEqual(tuple(marked[0,0]),(100,100,100))
+        self.assertTrue((image==100).all())
+
     def test_verification_reports_mismatch_and_warn_uses_current_metrics(self):
         from tools.visualize_paper_results import METRICS, read_csv, write_csv
         with tempfile.TemporaryDirectory() as temporary:
@@ -67,16 +151,6 @@ class PaperVisualizationTest(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         verify_export(args, 'View5', BY_MODEL['range'], folder)
 
-    def test_multiple_roi_bounds_and_invalid_coordinates(self):
-        arrays = {'gt': np.ones((10, 20))}
-        rois = resolve_rois({'rois': [{'name': 'edge', 'bounds': [0, 0, 5, 5]},
-                                    [8, 2, 15, 9]]}, arrays)
-        self.assertEqual([r['id'] for r in rois], ['roi_01', 'roi_02'])
-        self.assertEqual(rois[0]['name'], 'edge')
-        for bounds in ([0, 0, 21, 5], [3, 3, 2, 5], [0., 0, 5, 5]):
-            with self.assertRaises(ValueError):
-                resolve_rois({'roi': bounds}, arrays)
-
     def test_paper_layout_separate_panels_and_unclipped_metrics(self):
         from tools.visualize_paper_results import REGIONS, read_csv
         with tempfile.TemporaryDirectory() as temporary:
@@ -88,6 +162,8 @@ class PaperVisualizationTest(unittest.TestCase):
                     'disparity': np.ones((4, 6)), 'occlusion_ratio': np.full((4, 6), .5)}
             for region in REGIONS:
                 base['mask_'+region] = valid.copy()
+            count = np.ones((4,6),dtype=np.uint16); count[:,:3] = 2; count[~valid] = 0
+            base['occluded_count'] = count
             for stage in (1, 2, 3):
                 base[f'stage{stage}_coverage'] = valid.copy()
                 base[f'stage{stage}_width'] = np.ones((4, 6))*3
@@ -101,33 +177,35 @@ class PaperVisualizationTest(unittest.TestCase):
                 (folder/'metadata.json').write_text(json.dumps({'analysis_config': name}), encoding='utf-8')
                 files[name] = folder
             args = SimpleNamespace(outdir=str(root/'figs'), error_max=1., gain_max=1.)
-            render_paper_sample(args, 'View5', 'sample', files,
-                                {'rois': [{'name': 'left', 'bounds': [0, 0, 3, 4]},
-                                          {'name': 'right', 'bounds': [3, 0, 6, 4]}]})
-            out = root/'figs'/'View5'/'comparison'/'sample'
-            self.assertEqual(len(list((out/'panels').glob('*.png'))), 10)
-            self.assertEqual(len(list((out/'roi_01'/'panels').glob('*.png'))), 10)
-            self.assertTrue((out/'overview_2x5.pdf').is_file())
-            self.assertTrue((out/'roi_02'/'zoom_2x5.png').is_file())
+            with patch('matplotlib.figure.Figure.colorbar',side_effect=AssertionError('No colorbars requested')):
+                render_paper_sample(args, 'View5', 'sample', files)
+            out = root/'figs'/'View5'/'scenes'/'mixed_other'/'sample'
+            self.assertEqual(len(list((out/'panels').glob('*.png'))), 15)
+            self.assertTrue((out/'overview_3x5.pdf').is_file())
+            self.assertFalse(list(out.glob('roi_*')))
+            settings = json.loads((out/'display_settings.json').read_text())
+            self.assertEqual(settings['gain_colors']['positive'], 'red')
+            self.assertEqual(settings['gain_colors']['negative'], 'blue')
+            self.assertFalse(settings['show_colorbars'])
+            self.assertFalse(settings['show_axis_ticks'])
+            self.assertTrue((out/'figure_caption.txt').is_file())
             with Image.open(out/'panels'/'error_gain.png') as img:
                 pixels = np.array(img)
                 self.assertEqual(img.size, (6, 4))
             self.assertEqual(tuple(pixels[0, 0]), (0, 0, 0, 255))
-            self.assertGreater(pixels[1, 1, 2], pixels[1, 1, 0])  # Improvement is blue.
-            self.assertGreater(pixels[1, 4, 0], pixels[1, 4, 2])  # Regression is red.
-            with Image.open(out/'roi_01'/'panels'/'base_abs_error.png') as img:
-                np.testing.assert_array_equal(np.array(img),
-                    np.array(Image.open(out/'panels'/'base_abs_error.png'))[:, :3])
-            rows = read_csv(out/'metrics_full_and_roi.csv')
-            self.assertEqual(len(rows), 2*7*3)  # No duplicate full-image rows across ROIs.
+            self.assertGreater(pixels[1, 1, 0], pixels[1, 1, 2])  # Improvement is red.
+            self.assertGreater(pixels[1, 4, 2], pixels[1, 4, 0])  # Regression is blue.
+            rows = read_csv(out/'region_metrics.csv')
+            self.assertEqual(len(rows), 2*9)
             left = next(r for r in rows if r['analysis_config']=='Base+A+B+C'
-                        and r['scope']=='roi_01' and r['region']=='full')
-            right = next(r for r in rows if r['analysis_config']=='Base+A+B+C'
-                         and r['scope']=='roi_02' and r['region']=='full')
+                        and r['region']=='occluded_ge2')
+            right = next(r for r in rows if r['analysis_config']=='Base+A+B+C' and r['region']=='full')
             self.assertEqual(float(left['abs']), 2.)  # Plot bound is 1 mm; raw metric stays 2 mm.
             self.assertEqual(float(left['acc2']), 0.)  # Strict < 2 mm.
             self.assertEqual(float(left['abs_reduction_pct']), 50.)
-            self.assertEqual(float(right['abs_reduction_pct']), -50.)
+            self.assertEqual(int(left['pixels']), 11)
+            self.assertEqual(int(right['pixels']), 23)
+            self.assertAlmostEqual(float(right['improved_pixels_pct']),100*11/23)
             bad = {**ours, 'rgb': base['rgb']+1}
             np.savez_compressed(files['Base+A+B+C']/'arrays.npz', **bad)
             with self.assertRaisesRegex(ValueError, 'unaligned'):
