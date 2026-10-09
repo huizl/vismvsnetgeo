@@ -4,6 +4,7 @@
 stats: plots and neutral sample selection from all eight CSV configurations.
 export: invoke the existing evaluator with actual checkpoints on a server.
 render: shared-scale depth/error/coverage panels from exported NPZs.
+verify: inspect cached export metrics against the original CSV, without inference.
 """
 from __future__ import annotations
 
@@ -294,28 +295,80 @@ def export(args):
 
 
 def verify_export(args, series, config, folder):
+    folder = Path(folder)
     original, _ = load_series(args.eval_root, series)
     exported = read_csv(folder/'all_metrics.csv')
     if not exported:
         raise RuntimeError('Export produced no metrics')
     checks = []
+    seen = set()
     for row in exported:
+        validate_csv_identity(row, config)
         key = (*sample_key(row), row['region'])
+        if key in seen:
+            raise ValueError(f'Duplicate exported sample/region: {key}')
+        seen.add(key)
         if key not in original[config.name]:
             raise ValueError(f'Exported sample absent from original evaluation: {key}')
         reference = original[config.name][key]
+        for field in ('eval_nviews', 'region_nviews', 'range_sigma_scale', 'range_min_scale',
+                      'range_max_scale', 'hypothesis_residual_scale'):
+            if float(row[field]) != float(reference[field]):
+                raise ValueError(f'{config.name}/{key}: evaluation protocol differs ({field})')
         if int(row['pixels']) != int(reference['pixels']):
             raise ValueError('Exported region population differs from original evaluation')
         for metric in METRICS:
+            if not np.isfinite(float(row[metric])):
+                raise ValueError(f'{config.name}/{key}: nonfinite exported metric {metric}')
             delta = float(row[metric])-float(reference[metric])
-            good = np.isclose(float(row[metric]), float(reference[metric]), atol=args.verify_atol, rtol=1e-4)
+            good = np.isclose(float(row[metric]), float(reference[metric]), atol=args.verify_atol,
+                              rtol=getattr(args, 'verify_rtol', 1e-4))
             checks.append({'sample': sample_id(sample_key(row)), 'region': row['region'],
                            'metric': metric, 'original':reference[metric], 'exported':row[metric],
                            'delta':delta, 'within_tolerance':bool(good)})
+    samples = {k[:3] for k in seen}
+    expected = {k for k in original[config.name] if k[:3] in samples}
+    if expected != seen:
+        raise ValueError('Exported region rows differ from original evaluation: '+str(expected-seen))
     write_csv(folder/'reproduction_check.csv', checks)
-    if not all(r['within_tolerance'] for r in checks):
-        raise RuntimeError('New predictions differ from CSV; see reproduction_check.csv. '
-                           'Check checkpoint, input, stage candidate counts, intervals and tolerances.')
+    failed = [r for r in checks if not r['within_tolerance']]
+    write_csv(folder/'reproduction_failures.csv', sorted(failed, key=lambda r: abs(r['delta']), reverse=True))
+    if not failed:
+        # Remove a stale failure report left by a previous export.
+        (folder/'reproduction_failures.csv').unlink(missing_ok=True)
+    per_metric = []
+    for metric in METRICS:
+        rows = [r for r in checks if r['metric'] == metric]
+        worst = max(rows, key=lambda r: abs(r['delta']))
+        per_metric.append({'metric': metric, 'failed': sum(not r['within_tolerance'] for r in rows),
+                           'checked': len(rows), 'max_abs_delta': abs(worst['delta']),
+                           'sample': worst['sample'], 'region': worst['region'],
+                           'original': worst['original'], 'exported': worst['exported']})
+    write_csv(folder/'reproduction_summary.csv', per_metric)
+    mode = getattr(args, 'verify_mode', 'strict')
+    report = {'analysis_config': config.name, 'series': series, 'verify_mode': mode,
+              'matches_original_csv': not failed, 'failed_checks': len(failed), 'total_checks': len(checks),
+              'atol': args.verify_atol, 'rtol': getattr(args, 'verify_rtol', 1e-4),
+              'sample_failures': {sample_id(k): sum(r['sample']==sample_id(k) for r in failed)
+                                  for k in sorted(samples)},
+              'figure_metric_source': 'current exported predictions; no substitution with original CSV',
+              'worst_differences': per_metric}
+    (folder/'reproduction_status.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+    print(f'{series}/{config.name}: {len(failed)}/{len(checks)} metric checks differ from original CSV', flush=True)
+    for row in per_metric:
+        if row['failed']:
+            print(f"  {row['metric']}: {row['failed']}/{row['checked']} differ; "
+                  f"max |delta|={row['max_abs_delta']:.6g}, "
+                  f"old={row['original']}, new={row['exported']} "
+                  f"({row['sample']}/{row['region']})", flush=True)
+    if failed and mode == 'strict':
+        raise RuntimeError('New predictions differ from CSV; see reproduction_summary.csv and reproduction_failures.csv. '
+                           'Check checkpoint, preprocessing, batch size and evaluation parameters. '
+                           'To visualize current predictions while retaining the mismatch report, explicitly use --verify_mode warn.')
+    if failed:
+        print('WARNING: continuing with current predictions. Figure/ROI metrics describe this export; '
+              'the original CSV has not been reproduced.', flush=True)
+    return report
 
 
 def crop_bounds(meta, arrays):
@@ -588,7 +641,7 @@ def render(args,series):
 def main():
     plt.rcParams.update({'font.size':9,'pdf.fonttype':42,'ps.fonttype':42,'axes.spines.top':False,'axes.spines.right':False})
     parser=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('command',choices=['stats','export','render'])
+    parser.add_argument('command',choices=['stats','export','render','verify'])
     parser.add_argument('--eval_root',default=str(ROOT/'eval'))
     parser.add_argument('--outdir',default=str(ROOT/'outputs'/'paper_visualizations'))
     parser.add_argument('--series',choices=['all','View5','View3'],default='all')
@@ -602,6 +655,9 @@ def main():
                         help='render: Base/Ours overview and separate panels (default), or legacy ablation figures')
     parser.add_argument('--batch_size',type=int,default=1); parser.add_argument('--num_workers',type=int,default=4)
     parser.add_argument('--verify_atol',type=float,default=1e-3)
+    parser.add_argument('--verify_rtol',type=float,default=1e-4)
+    parser.add_argument('--verify_mode',choices=['strict','warn'],default='strict',
+                        help='strict stops on metric mismatch; warn reports mismatch and visualizes current predictions')
     parser.add_argument('--dry_run',action='store_true')
     parser.add_argument('--error_max',type=float,default=20); parser.add_argument('--gain_max',type=float,default=10)
     parser.add_argument('--cdf_max',type=float,default=30); parser.add_argument('--allow_partial',action='store_true')
@@ -609,10 +665,14 @@ def main():
     if args.command=='export' and (not args.testpath or args.series=='all'):
         parser.error('export requires --testpath and one explicit --series View5 or View3')
     if min(args.error_max,args.gain_max,args.cdf_max)<=0: parser.error('Plot bounds must be positive')
+    if args.verify_atol < 0 or args.verify_rtol < 0: parser.error('Verification tolerances must be nonnegative')
     series=list(SERIES) if args.series=='all' else [args.series]
     for s in series:
         if args.command=='stats': stat_figures(args,s)
         elif args.command=='render': render(args,s)
+        elif args.command=='verify':
+            for name in args.configs or ['Base','Base+A+B+C']:
+                verify_export(args, s, BY_NAME[name], Path(args.outdir)/s/name/'exported_metrics')
         else: export(args)
 
 

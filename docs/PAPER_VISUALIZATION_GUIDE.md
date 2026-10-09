@@ -246,3 +246,29 @@ outputs/paper_visualizations/
 目前已有的统计图位于 `docs/paper_visualizations/`。服务器跑出真实图像后，优先选择代表性大视差、遮挡以及交集案例，正文排入 Base/Ours 两行五列总览或从独立子图重排，并用局部放大突出边缘和遮挡细节。消融配置保留在统计表中。图注写明 scan、参考视图、光照、同一 ROI、色标单位和该区域指标。完整论文现在的图1–6已经有连续编号；新增定性图应接续编号并在分析对应段落引用。
 
 若论文宣称三维重建质量，还需一致的深度过滤/融合以及 DTU 点云 Accuracy、Completeness、Overall。当前像素深度指标与彩色点云截图不能代替这些三维评价。
+
+## 8. 导出后提示 New predictions differ from CSV
+
+这表示真实预测已经导出，但数值复核没有通过；严格模式会在当前配置处停止，所以后续完整模型推理及绘图尚未执行。先检查新生成的差异报告，不能仅凭异常提示断定是检查点或参数错误。
+
+更新代码后，可以直接检查现有缓存，不需要再次推理：
+
+```bash
+python tools/visualize_paper_results.py verify --series View5 --configs Base \
+  --outdir outputs/paper_visualizations --verify_mode warn
+```
+
+报告位于 `View5/Base/exported_metrics/`：`reproduction_check.csv` 为所有比较，`reproduction_failures.csv` 只列失败比较，`reproduction_summary.csv` 按十项指标列出失败数量、最大绝对差值及对应样本，`reproduction_status.json` 保存复核状态。命令也直接打印最大差值。通过后删除旧的 failures 文件。
+
+应核对检查点是否被更新、输入预处理是否变化、推理深度候选和间隔、原评测 batch size，以及 CUDA/cuDNN 的数值波动。仓库的 `eval_regions_view5.sh` 默认 batch size 为 4，而可视化导出默认 1；这只是一个可核对的差异，不足以判断本次不一致的原因。CSV 没有保存全部运行参数和检查点哈希，需结合原运行记录确认。
+
+若当前先生成本次真实预测的图，显式开启告警模式：
+
+```bash
+CUDA_VISIBLE_DEVICES=3 PAPER_VERIFY_MODE=warn bash tools/run_paper_visualizations.sh \
+  /home/disk_10T/lzh_data/dtu_training/mvs_training/dtu checkpoints/dtu all
+```
+
+告警模式仍计算并保存全部数值差异，只允许数值复核失败后继续；模型身份、源视图协议、区域像素数、缺失区域或非有限指标不符仍停止。八组统计图仍来自原 CSV；新版深度图、误差图和局部表全部来自当前导出数组，不替换成旧数字。每个样本的 `display_settings.json` 包含复核记录。若不一致尚未解释，不应声称这次图像严格复现了旧表。
+
+若要减少重复推理，可先用 verify 检查已有 Base，再仅 export 完整模型，最后 render。若确认旧评测确实使用 batch size 4，可通过 `PAPER_BATCH_SIZE=4` 在相同条件下重试；默认仍为 1。告警模式没有扩大容差：绝对容差 `1e-3`、相对容差 `1e-4` 保持不变，严格模式仍是默认值。

@@ -14,11 +14,59 @@ from tools.paper_configs import CONFIGS, BY_MODEL, validate_csv_identity
 from tools.paper_dump import dump_sample
 from tools.paper_method_revision import renumber_references
 from tools.check_paper_integrity import check
-from tools.visualize_paper_results import add_deltas, factor_rows, region_rows, render_sample
+from tools.visualize_paper_results import add_deltas, factor_rows, region_rows, render_sample, verify_export
 from tools.paper_qualitative import render_paper_sample, resolve_rois
 
 
 class PaperVisualizationTest(unittest.TestCase):
+    def test_verification_reports_mismatch_and_warn_uses_current_metrics(self):
+        from tools.visualize_paper_results import METRICS, read_csv, write_csv
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary)
+            reference = dict(model_type='range', ablation_code='010', scan='scan1', view=0, light=3,
+                             region='full', pixels=100, eval_nviews=5, region_nviews=5,
+                             range_sigma_scale=2., range_min_scale=1., range_max_scale=2.,
+                             hypothesis_residual_scale=1., **{m: .8 for m in METRICS})
+            reference['abs'] = 5.
+            current = {**reference, 'abs': 7., 'acc2': .75}
+            write_csv(folder/'all_metrics.csv', [current])
+            args = SimpleNamespace(eval_root='unused', verify_atol=1e-3, verify_rtol=1e-4,
+                                   verify_mode='strict')
+            index = {'Base': {('scan1', 0, 3, 'full'): reference}}
+            with patch('tools.visualize_paper_results.load_series', return_value=(index, {})):
+                with self.assertRaisesRegex(RuntimeError, 'New predictions differ'):
+                    verify_export(args, 'View5', BY_MODEL['range'], folder)
+                report = json.loads((folder/'reproduction_status.json').read_text())
+                self.assertEqual(report['failed_checks'], 2)
+                self.assertEqual(len(read_csv(folder/'reproduction_summary.csv')), 10)
+                self.assertEqual(len(read_csv(folder/'reproduction_failures.csv')), 2)
+                args.verify_mode = 'warn'
+                report = verify_export(args, 'View5', BY_MODEL['range'], folder)
+                self.assertFalse(report['matches_original_csv'])
+                self.assertEqual(float(read_csv(folder/'all_metrics.csv')[0]['abs']), 7.)
+                self.assertEqual(reference['abs'], 5.)
+                args.verify_mode = 'strict'
+                write_csv(folder/'all_metrics.csv', [reference])
+                self.assertTrue(verify_export(args, 'View5', BY_MODEL['range'], folder)['matches_original_csv'])
+                self.assertFalse((folder/'reproduction_failures.csv').exists())
+
+    def test_warn_does_not_accept_wrong_identity_protocol_or_region_population(self):
+        from tools.visualize_paper_results import METRICS, write_csv
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary)
+            reference = dict(model_type='range', ablation_code='010', scan='scan1', view=0, light=3,
+                             region='full', pixels=100, eval_nviews=5, region_nviews=5,
+                             range_sigma_scale=2., range_min_scale=1., range_max_scale=2.,
+                             hypothesis_residual_scale=1., **{m: .8 for m in METRICS})
+            args = SimpleNamespace(eval_root='unused', verify_atol=1e-3, verify_mode='warn')
+            index = {'Base': {('scan1', 0, 3, 'full'): reference}}
+            with patch('tools.visualize_paper_results.load_series', return_value=(index, {})):
+                for changes in ({'model_type': 'vis'}, {'eval_nviews': 3}, {'pixels': 99},
+                                {'abs': float('nan')}):
+                    write_csv(folder/'all_metrics.csv', [{**reference, **changes}])
+                    with self.assertRaises(ValueError):
+                        verify_export(args, 'View5', BY_MODEL['range'], folder)
+
     def test_multiple_roi_bounds_and_invalid_coordinates(self):
         arrays = {'gt': np.ones((10, 20))}
         rois = resolve_rois({'rois': [{'name': 'edge', 'bounds': [0, 0, 5, 5]},

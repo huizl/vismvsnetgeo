@@ -224,5 +224,11 @@ def render_paper_sample(args, series, key, files, selection=None):
                 'invalid_gt_color': 'black', 'rois': rois, 'panels': manifest,
                 'metrics_use_unclipped_errors': True,
                 'roi_selection': 'manual' if meta.get('roi') is not None or meta.get('rois') is not None else 'GT region center'}
+    settings['metric_source'] = 'current exported prediction arrays'
+    settings['csv_reproduction'] = {}
+    for name in NAMES:
+        status = files[name].parent/'exported_metrics'/'reproduction_status.json'
+        settings['csv_reproduction'][name] = (json.loads(status.read_text(encoding='utf-8'))
+                                               if status.is_file() else {'status': 'not checked'})
     (out/'display_settings.json').write_text(json.dumps(settings, indent=2, ensure_ascii=False), encoding='utf-8')
     print(f'{key}: overview + 10 standalone panels + {len(rois)} ROI sets -> {out}', flush=True)

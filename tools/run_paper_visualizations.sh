@@ -12,6 +12,8 @@ paper_series="${3:-all}"
 paper_python="${PAPER_PYTHON:-python}"
 paper_output="${PAPER_OUTPUT:-outputs/paper_visualizations}"
 paper_eval_args="${PAPER_EVAL_ARGS_JSON:-tools/paper_eval_args.example.json}"
+paper_verify_mode="${PAPER_VERIFY_MODE:-strict}"
+paper_batch_size="${PAPER_BATCH_SIZE:-1}"
 case "$paper_series" in
   all) paper_sets=(View5 View3) ;;
   View5|View3) paper_sets=("$paper_series") ;;
@@ -23,6 +25,7 @@ for paper_set in "${paper_sets[@]}"; do
     --series "$paper_set" --testpath "$paper_data_root" \
     --checkpoint_root "$paper_checkpoint_root" --testlist lists/dtu/test.txt \
     --configs Base 'Base+A+B+C' \
+    --verify_mode "$paper_verify_mode" --batch_size "$paper_batch_size" \
     --selection "$paper_output/$paper_set/selection.json" \
     --eval_args_json "$paper_eval_args" --outdir "$paper_output"
   "$paper_python" tools/visualize_paper_results.py render \
