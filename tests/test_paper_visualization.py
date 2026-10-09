@@ -15,9 +15,76 @@ from tools.paper_dump import dump_sample
 from tools.paper_method_revision import renumber_references
 from tools.check_paper_integrity import check
 from tools.visualize_paper_results import add_deltas, factor_rows, region_rows, render_sample
+from tools.paper_qualitative import render_paper_sample, resolve_rois
 
 
 class PaperVisualizationTest(unittest.TestCase):
+    def test_multiple_roi_bounds_and_invalid_coordinates(self):
+        arrays = {'gt': np.ones((10, 20))}
+        rois = resolve_rois({'rois': [{'name': 'edge', 'bounds': [0, 0, 5, 5]},
+                                    [8, 2, 15, 9]]}, arrays)
+        self.assertEqual([r['id'] for r in rois], ['roi_01', 'roi_02'])
+        self.assertEqual(rois[0]['name'], 'edge')
+        for bounds in ([0, 0, 21, 5], [3, 3, 2, 5], [0., 0, 5, 5]):
+            with self.assertRaises(ValueError):
+                resolve_rois({'roi': bounds}, arrays)
+
+    def test_paper_layout_separate_panels_and_unclipped_metrics(self):
+        from tools.visualize_paper_results import REGIONS, read_csv
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            valid = np.ones((4, 6), dtype=bool)
+            valid[0, 0] = False
+            base = {'gt': np.ones((4, 6))*10, 'pred': np.ones((4, 6))*14,
+                    'rgb': np.full((4, 6, 3), 100, dtype=np.uint8), 'valid': valid,
+                    'disparity': np.ones((4, 6)), 'occlusion_ratio': np.full((4, 6), .5)}
+            for region in REGIONS:
+                base['mask_'+region] = valid.copy()
+            for stage in (1, 2, 3):
+                base[f'stage{stage}_coverage'] = valid.copy()
+                base[f'stage{stage}_width'] = np.ones((4, 6))*3
+            ours = {**base, 'pred': np.full((4, 6), 16.)}
+            ours['pred'][:, :3] = 12.
+            files = {}
+            for name, data in (('Base', base), ('Base+A+B+C', ours)):
+                folder = root/name/'sample'
+                folder.mkdir(parents=True)
+                np.savez_compressed(folder/'arrays.npz', **data)
+                (folder/'metadata.json').write_text(json.dumps({'analysis_config': name}), encoding='utf-8')
+                files[name] = folder
+            args = SimpleNamespace(outdir=str(root/'figs'), error_max=1., gain_max=1.)
+            render_paper_sample(args, 'View5', 'sample', files,
+                                {'rois': [{'name': 'left', 'bounds': [0, 0, 3, 4]},
+                                          {'name': 'right', 'bounds': [3, 0, 6, 4]}]})
+            out = root/'figs'/'View5'/'comparison'/'sample'
+            self.assertEqual(len(list((out/'panels').glob('*.png'))), 10)
+            self.assertEqual(len(list((out/'roi_01'/'panels').glob('*.png'))), 10)
+            self.assertTrue((out/'overview_2x5.pdf').is_file())
+            self.assertTrue((out/'roi_02'/'zoom_2x5.png').is_file())
+            with Image.open(out/'panels'/'error_gain.png') as img:
+                pixels = np.array(img)
+                self.assertEqual(img.size, (6, 4))
+            self.assertEqual(tuple(pixels[0, 0]), (0, 0, 0, 255))
+            self.assertGreater(pixels[1, 1, 2], pixels[1, 1, 0])  # Improvement is blue.
+            self.assertGreater(pixels[1, 4, 0], pixels[1, 4, 2])  # Regression is red.
+            with Image.open(out/'roi_01'/'panels'/'base_abs_error.png') as img:
+                np.testing.assert_array_equal(np.array(img),
+                    np.array(Image.open(out/'panels'/'base_abs_error.png'))[:, :3])
+            rows = read_csv(out/'metrics_full_and_roi.csv')
+            self.assertEqual(len(rows), 2*7*3)  # No duplicate full-image rows across ROIs.
+            left = next(r for r in rows if r['analysis_config']=='Base+A+B+C'
+                        and r['scope']=='roi_01' and r['region']=='full')
+            right = next(r for r in rows if r['analysis_config']=='Base+A+B+C'
+                         and r['scope']=='roi_02' and r['region']=='full')
+            self.assertEqual(float(left['abs']), 2.)  # Plot bound is 1 mm; raw metric stays 2 mm.
+            self.assertEqual(float(left['acc2']), 0.)  # Strict < 2 mm.
+            self.assertEqual(float(left['abs_reduction_pct']), 50.)
+            self.assertEqual(float(right['abs_reduction_pct']), -50.)
+            bad = {**ours, 'rgb': base['rgb']+1}
+            np.savez_compressed(files['Base+A+B+C']/'arrays.npz', **bad)
+            with self.assertRaisesRegex(ValueError, 'unaligned'):
+                render_paper_sample(args, 'View5', 'sample', files)
+
     def test_manuscript_equations_citations_and_images(self):
         self.assertEqual(check(Path(__file__).resolve().parents[1]/'docs'/'PAPER_COMPLETE_WITH_RESULTS.md'),(21,19,6))
 

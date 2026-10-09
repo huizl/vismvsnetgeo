@@ -559,14 +559,30 @@ def render_fusion(args, folder, arr, meta, valid):
 def render(args,series):
     folder=Path(args.outdir)/series
     groups={}
+    layout = getattr(args, 'layout', 'paper')
+    chosen = args.configs or (['Base', 'Base+A+B+C'] if layout == 'paper' else list(BY_NAME))
+    if layout == 'paper' and set(chosen) != {'Base', 'Base+A+B+C'}:
+        raise ValueError('Paper layout requires Base and Base+A+B+C; use --layout ablation for other configurations')
+    selections = None
+    if args.selection:
+        selections = {sample_id(sample_key(x)): x for x in json.loads(Path(args.selection).read_text(encoding='utf-8'))}
     for config in CONFIGS:
+        if config.name not in chosen: continue
         for path in (folder/config.name).glob('*/arrays.npz'):
+            if selections is not None and path.parent.name not in selections: continue
             groups.setdefault(path.parent.name,{})[config.name]=path.parent
     if not groups: raise FileNotFoundError('No exported arrays; run export on actual checkpoints first')
+    if selections is not None and set(selections) - set(groups):
+        raise FileNotFoundError('Selected samples have no cached arrays: '+str(sorted(set(selections)-set(groups))))
     for key,files in sorted(groups.items()):
         if 'Base' not in files: raise ValueError(f'{key}: Base missing')
-        if len(files)!=8 and not args.allow_partial: raise ValueError(f'{key}: missing configurations; use --allow_partial for diagnostics only')
-        render_sample(args,series,key,files)
+        if layout == 'paper':
+            if 'Base+A+B+C' not in files: raise ValueError(f'{key}: complete model Base+A+B+C missing')
+            from tools.paper_qualitative import render_paper_sample
+            render_paper_sample(args, series, key, files, selections.get(key) if selections is not None else None)
+        else:
+            if len(files)!=8 and not args.allow_partial: raise ValueError(f'{key}: missing configurations; use --allow_partial for diagnostics only')
+            render_sample(args,series,key,files)
 
 
 def main():
@@ -576,12 +592,14 @@ def main():
     parser.add_argument('--eval_root',default=str(ROOT/'eval'))
     parser.add_argument('--outdir',default=str(ROOT/'outputs'/'paper_visualizations'))
     parser.add_argument('--series',choices=['all','View5','View3'],default='all')
-    parser.add_argument('--selection',help='JSON with scan/view/light, optional roi/probe')
+    parser.add_argument('--selection',help='JSON with scan/view/light, optional roi/rois/probe; also filters rendered samples')
     parser.add_argument('--checkpoint_root',help='Relocate CSV checkpoint folder under this root')
     parser.add_argument('--checkpoint_manifest',help='JSON keyed by Base, Base+A, ..., paths to actual checkpoints')
     parser.add_argument('--eval_args_json',help='Explicit evaluator parameters used in original CSV run')
     parser.add_argument('--testpath'); parser.add_argument('--testlist',default=str(ROOT/'lists'/'dtu'/'test.txt'))
     parser.add_argument('--configs',nargs='+',choices=list(BY_NAME))
+    parser.add_argument('--layout',choices=['paper','ablation'],default='paper',
+                        help='render: Base/Ours overview and separate panels (default), or legacy ablation figures')
     parser.add_argument('--batch_size',type=int,default=1); parser.add_argument('--num_workers',type=int,default=4)
     parser.add_argument('--verify_atol',type=float,default=1e-3)
     parser.add_argument('--dry_run',action='store_true')

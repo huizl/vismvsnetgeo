@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Usage: bash tools/run_paper_visualizations.sh DTU_ROOT CHECKPOINT_ROOT [all|View5|View3]
+# Usage: CUDA_VISIBLE_DEVICES=0 bash tools/run_paper_visualizations.sh DTU_ROOT CHECKPOINT_ROOT [all|View5|View3]
+# CSV statistics retain all eight configurations; inference/qualitative figures compare Base and Ours.
 set -euo pipefail
 if [[ $# -lt 2 || $# -gt 3 ]]; then
   echo 'Usage: bash tools/run_paper_visualizations.sh DTU_ROOT CHECKPOINT_ROOT [all|View5|View3]' >&2
@@ -21,8 +22,9 @@ for paper_set in "${paper_sets[@]}"; do
   "$paper_python" tools/visualize_paper_results.py export \
     --series "$paper_set" --testpath "$paper_data_root" \
     --checkpoint_root "$paper_checkpoint_root" --testlist lists/dtu/test.txt \
+    --configs Base 'Base+A+B+C' \
     --selection "$paper_output/$paper_set/selection.json" \
     --eval_args_json "$paper_eval_args" --outdir "$paper_output"
   "$paper_python" tools/visualize_paper_results.py render \
-    --series "$paper_set" --outdir "$paper_output"
+    --series "$paper_set" --outdir "$paper_output" --layout paper
 done
