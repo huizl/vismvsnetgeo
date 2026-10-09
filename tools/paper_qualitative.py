@@ -95,8 +95,10 @@ def select_scene_examples(records, per_category=2):
     from tools.visualize_paper_results import sample_key
     chosen = {}
     for category in CATEGORIES:
-        candidates = [r for r in records if category in category_scores(r)]
-        candidates.sort(key=lambda r: (-category_scores(r)[category], r['scan'], r['view'], r['light']))
+        candidates = [r for r in records if category in category_scores(r)
+                      and np.isfinite(r['abs_reduction_pct']) and r['abs_reduction_pct'] > 0]
+        candidates.sort(key=lambda r: (-r['abs_reduction_pct'], -category_scores(r)[category],
+                                       r['scan'], r['view'], r['light']))
         used_scans = set()
         for record in candidates:
             if record['scan'] in used_scans:
@@ -104,14 +106,19 @@ def select_scene_examples(records, per_category=2):
             key = sample_key(record)
             if key not in chosen:
                 chosen[key] = {'scan': key[0], 'view': key[1], 'light': key[2],
-                               'scene_categories': [], 'reason': 'Fixed GT geometry; not ranked by improvement',
+                               'scene_categories': [],
+                               'reason': 'GT category, then descending full-image Abs reduction versus Base',
+                               'ranking_metric': 'full_image_abs_reduction_pct',
+                               'ranking_source': 'original per-image CSV',
+                               'base_abs': record['base_abs'], 'full_model_abs': record['full_model_abs'],
+                               'abs_reduction_pct': record['abs_reduction_pct'],
                                'scene_geometry': record}
             chosen[key]['scene_categories'].append(category)
             used_scans.add(record['scan'])
             if len(used_scans) >= per_category:
                 break
         if not used_scans:
-            raise ValueError(f'No eligible scenes for {category}; inspect scene_candidates.csv')
+            raise ValueError(f'No eligible positive-improvement scenes for {category}; inspect scene_candidates.csv')
     return list(chosen.values())
 
 
@@ -145,8 +152,12 @@ def select_from_dtu(args, series):
         if int(large.sum()) != int(per_image['Base'][(*key, 'large_disparity')]['pixels']):
             raise ValueError(f'{key}: large-disparity mask differs from original CSV')
         arrays = {'gt': gt, 'valid': valid, 'mask_large_disparity': large, 'disparity': geom['disparity']}
+        base_abs = float(per_image['Base'][(*key,'full')]['abs'])
+        full_abs = float(per_image['Base+A+B+C'][(*key,'full')]['abs'])
         records.append(dict(scan=scan, view=ref, light=light,
-                            **scene_descriptor(arrays, geom['source_occluded'].sum(axis=0))))
+                            **scene_descriptor(arrays, geom['source_occluded'].sum(axis=0)),
+                            base_abs=base_abs, full_model_abs=full_abs,
+                            abs_reduction_pct=100*(base_abs-full_abs)/base_abs if base_abs > 0 else float('nan')))
         if len(records) % 100 == 0:
             print(f'{series}: GT geometry screened {len(records)}/{len(allowed)} samples', flush=True)
     if {sample_key(r) for r in records} != allowed:
@@ -167,12 +178,18 @@ def yellow_contours(raster, large, complex_occ):
     return result
 
 
-def overlay_rgb(rgb, large, complex_occ):
+def overlay_rgb(rgb, large, complex_occ, alpha=.70):
+    if not 0 <= alpha <= 1:
+        raise ValueError('Overlay alpha must be between 0 and 1')
     result = rgb.astype(float).copy()
-    for mask, color in ((large & ~complex_occ, (255, 40, 40)),
-                        (complex_occ & ~large, (0, 230, 100)),
-                        (large & complex_occ, (255, 220, 0))):
-        result[mask] = .65*result[mask] + .35*np.asarray(color)
+    for mask, color in ((large & ~complex_occ, (255, 0, 0)),
+                        (complex_occ & ~large, (0, 255, 0)),
+                        (large & complex_occ, (255, 255, 0))):
+        result[mask] = (1-alpha)*result[mask] + alpha*np.asarray(color)
+        # Solid, inward outlines stay inside the exact GT region; no dilation.
+        inner = cv2.erode(mask.astype(np.uint8),np.ones((3,3),np.uint8),
+                          iterations=2,borderType=cv2.BORDER_CONSTANT,borderValue=0).astype(bool)
+        result[mask & ~inner] = color
     return np.uint8(np.clip(result, 0, 255))
 
 
@@ -228,6 +245,10 @@ def render_paper_sample(args, series, key, files, selection=None):
     if not np.array_equal(any_occ, base['mask_occluded_any'].astype(bool)):
         raise ValueError('Source counts disagree with fixed any-occlusion mask')
     description = scene_descriptor(base, count)
+    ranking = {k:selection[k] for k in ('ranking_metric','ranking_source','base_abs',
+              'full_model_abs','abs_reduction_pct') if selection and k in selection}
+    if not ranking:
+        ranking = metadata['Base'].get('scene_ranking', {})
     categories = (selection or {}).get('scene_categories') or metadata['Base'].get('scene_categories')
     if not categories:
         scores = category_scores(description)
@@ -250,7 +271,8 @@ def render_paper_sample(args, series, key, files, selection=None):
         ('gt_depth', 'GT depth', rgba(base['gt'],valid,'turbo',depth_norm), 'turbo',depth_norm,'Depth (mm)'),
         ('large_disparity_map', 'GT displacement', rgba(base['disparity'],valid,'viridis',Normalize(0,disp_max)), 'viridis',Normalize(0,disp_max),'Displacement (px)'),
         ('source_occlusion_ratio', 'Source occlusion ratio', rgba(base['occlusion_ratio'],valid,'viridis',Normalize(0,1)), 'viridis',Normalize(0,1),'Occluded / comparable sources'),
-        ('difficulty_overlay', 'Red: disparity; green: occlusion; yellow: both', overlay_rgb(base['rgb'],large,complex_occ),None,None,None),
+        ('difficulty_overlay', 'Red: disparity; green: occlusion; yellow: both',
+         overlay_rgb(base['rgb'],large,complex_occ,getattr(args,'overlay_alpha',.70)),None,None,None),
         ('base_depth', 'Base depth', rgba(base['pred'],valid,'turbo',depth_norm),'turbo',depth_norm,'Depth (mm)'),
         ('full_model_depth', 'Base+A+B+C depth', rgba(full['pred'],valid,'turbo',depth_norm),'turbo',depth_norm,'Depth (mm)'),
         ('base_abs_error', 'Base absolute error', yellow_contours(rgba(errors['Base'],valid,'magma',error_norm),large,complex_occ),'magma',error_norm,'Absolute error (mm)'),
@@ -295,8 +317,8 @@ def render_paper_sample(args, series, key, files, selection=None):
         for ax,panel in zip(axes.flat,panels): draw_panel(ax,panel)
         fig.suptitle(f'{key} | {CATEGORY_LABELS[category]} | Base vs Base+A+B+C',fontsize=13)
         fig.legend(handles=[Patch(color=c,label=t) for c,t in
-                    (('#ff2828','Disparity only (RGB overlay)'),('#00e664','>=2 occluded views only (RGB overlay)'),
-                     ('#ffdc00','Intersection (RGB overlay)'),('#ffff00','GT difficulty contours (error maps)'))],
+                    (('#ff0000','Disparity only (RGB overlay)'),('#00ff00','>=2 occluded views only (RGB overlay)'),
+                     ('#ffff00','Intersection (RGB overlay)'),('#ffff00','GT difficulty contours (error maps)'))],
                    loc='lower center',ncol=2,fontsize=9)
         fig.get_layout_engine().set(rect=(0,.06,1,.94))
         save_figure(fig,out/'overview_3x5')
@@ -310,8 +332,13 @@ def render_paper_sample(args, series, key, files, selection=None):
                     'occluded_ge2_definition':'source occlusion count >= 2, not majority fraction',
                     'occlusion_ratio_definition':'occluded source count / GT-comparable source count',
                     'metric_source':'current exported arrays; unclipped errors',
+                    'selection_ranking':ranking,
                     'csv_reproduction':reproduction,'panels':manifest,'show_colorbars':False,
                     'show_axis_ticks':False}
+        settings.update(overlay_alpha=getattr(args,'overlay_alpha',.70),
+                        overlay_outline='2 pixels inside GT class masks; no mask expansion',
+                        overlay_colors={'large_disparity_only':'#ff0000',
+                                        'occluded_ge2_only':'#00ff00','intersection':'#ffff00'})
         (out/'display_settings.json').write_text(json.dumps(settings,indent=2,ensure_ascii=False),encoding='utf-8')
         caption = (f'{key}: {CATEGORY_LABELS[category]}. Base and Base+A+B+C use the same GT and source views.\n'
                    f'Depth colors: {lo:.3f}-{hi:.3f} mm; absolute-error colors: 0-{args.error_max:g} mm; '
@@ -320,6 +347,10 @@ def render_paper_sample(args, series, key, files, selection=None):
                    'blue means degradation, white means zero. Yellow error-map contours denote fixed GT '
                    'large-disparity and >=2-source occlusion regions.\n'
                    'No colorbars or axis ticks are drawn. Display clipping never changes numeric metrics.\n')
+        if ranking:
+            caption += ('Selected by descending full-image Abs reduction from the original per-image CSV: '
+                        f'{ranking.get("abs_reduction_pct",float("nan")):.3f}%. '
+                        'A selected improvement example is not a representative estimate of the test set.\n')
         (out/'figure_caption.txt').write_text(caption,encoding='utf-8')
         np.savez_compressed(out/'comparison_arrays.npz',valid=valid,base_error=errors['Base'],
                             full_model_error=errors[NAMES[1]],error_gain=gain,occluded_count=count,

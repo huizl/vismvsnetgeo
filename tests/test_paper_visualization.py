@@ -16,10 +16,27 @@ from tools.paper_method_revision import renumber_references
 from tools.check_paper_integrity import check
 from tools.visualize_paper_results import add_deltas, factor_rows, region_rows, render_sample, verify_export
 from tools.paper_qualitative import (render_paper_sample, occlusion_count, scene_descriptor,
-                                     category_scores, select_scene_examples, select_from_dtu, yellow_contours)
+                                     category_scores, select_scene_examples, select_from_dtu, yellow_contours, overlay_rgb)
 
 
 class PaperVisualizationTest(unittest.TestCase):
+    def test_stronger_overlay_preserves_gt_masks_and_unmarked_rgb(self):
+        rgb = np.full((40,60,3),255,dtype=np.uint8)
+        large = np.zeros((40,60),dtype=bool); large[3:24,3:27]=True
+        occ = np.zeros_like(large); occ[14:36,18:52]=True
+        marked = overlay_rgb(rgb,large,occ)
+        self.assertEqual(tuple(marked[8,8]),(255,76,76))
+        self.assertEqual(tuple(marked[29,43]),(76,255,76))
+        self.assertEqual(tuple(marked[18,22]),(255,255,76))
+        self.assertEqual(tuple(marked[3,3]),(255,0,0))
+        self.assertEqual(tuple(marked[35,51]),(0,255,0))
+        outside = ~(large|occ)
+        np.testing.assert_array_equal(marked[outside],rgb[outside])
+        self.assertTrue((rgb==255).all())
+        self.assertEqual(int(large.sum()),21*24)
+        self.assertEqual(int(occ.sum()),22*34)
+        with self.assertRaises(ValueError): overlay_rgb(rgb,large,occ,1.1)
+
     def test_cpu_scene_selection_checks_gt_and_covers_three_categories(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -35,7 +52,7 @@ class PaperVisualizationTest(unittest.TestCase):
             for scan,light,ref,sources in metas:
                 folder = root/'data'/'Depths'/f'{scan}_train'; folder.mkdir(parents=True)
                 Image.new('L',(50,20),255).save(folder/'depth_visual_0000.png')
-                original[(scan,ref,light,'full')]={'pixels':1000}
+                original[(scan,ref,light,'full')]={'pixels':1000,'abs':10.}
                 original[(scan,ref,light,'large_disparity')]={'pixels':200}
             protocol = {'Base':{'full':{'eval_nviews':5,'region_nviews':5}}}
             args = SimpleNamespace(eval_root='unused',testpath=str(root/'data'),testlist='unused',
@@ -44,7 +61,8 @@ class PaperVisualizationTest(unittest.TestCase):
                 occ = occlusions[int(scan[4:])-1]
                 return dict(disparity=np.ones_like(valid,dtype=float)*20,
                             source_occluded=np.stack([occ,occ,~valid,~valid]))
-            with patch('tools.visualize_paper_results.load_series',return_value=({'Base':original},protocol)), \
+            full_index = {k:{**v, 'abs':5.} for k,v in original.items()}
+            with patch('tools.visualize_paper_results.load_series',return_value=({'Base':original,'Base+A+B+C':full_index},protocol)), \
                  patch('datasets.dtu_yao.MVSDataset',return_value=SimpleNamespace(metas=metas)), \
                  patch('tools.eval_region_metrics_dtu_yao.read_dtu_depth',return_value=np.ones_like(valid,dtype=float)), \
                  patch('tools.eval_region_metrics_dtu_yao.geometry_region_maps',side_effect=geometry), \
@@ -72,7 +90,7 @@ class PaperVisualizationTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             occlusion_count(arrays, {'source_views':[1,2,3], 'region_source_views':[4]})
 
-    def test_three_scene_categories_selected_by_geometry(self):
+    def test_three_scene_categories_ranked_by_full_image_improvement(self):
         records = []
         for i, (complex_fraction, joint_large, joint_occ, joint_fraction) in enumerate(
                 ((.02,.02,.20,.004),(.35,.10,.05,.02),(.30,.60,.40,.12)), 1):
@@ -81,13 +99,18 @@ class PaperVisualizationTest(unittest.TestCase):
                                 joint_ge2_pixels=round(joint_fraction*1000),
                                 occluded_ge2_fraction=complex_fraction, joint_fraction_of_large=joint_large,
                                 joint_fraction_of_occlusion=joint_occ, joint_ge2_fraction=joint_fraction,
-                                disparity_p80_px=20., base_abs=999., ours_abs=1000.))
+                                disparity_p80_px=20., base_abs=10., full_model_abs=8., abs_reduction_pct=20.))
+        # Give each category a second, more improved case from another scan.
+        records += [{**r, 'scan':r['scan']+'0', 'full_model_abs':5., 'abs_reduction_pct':50.}
+                    for r in list(records)]
         selected = select_scene_examples(records,1)
         self.assertEqual([r['scene_categories'] for r in selected],
                          [['large_disparity_dominant'],['occlusion_dominant'],['joint_difficulty']])
-        for r in records: r.update(base_abs=1., ours_abs=0.)
-        self.assertEqual([r['scene_categories'] for r in select_scene_examples(records,1)],
-                         [r['scene_categories'] for r in selected])
+        self.assertEqual([r['scan'] for r in selected],['scan10','scan20','scan30'])
+        self.assertTrue(all(r['abs_reduction_pct']==50. for r in selected))
+        # Regression cases cannot displace a positive-improvement example.
+        records += [{**records[0], 'scan':'scan99','full_model_abs':15.,'abs_reduction_pct':-50.}]
+        self.assertEqual([r['scan'] for r in select_scene_examples(records,1)],['scan10','scan20','scan30'])
         with self.assertRaises(ValueError): select_scene_examples(records[:1],1)
         ambiguous = {**records[1], 'joint_ge2_pixels':100,'joint_ge2_fraction':.1,
                      'joint_fraction_of_large':.5,'joint_fraction_of_occlusion':.25}

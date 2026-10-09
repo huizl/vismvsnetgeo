@@ -673,6 +673,7 @@ def main():
                         help='strict stops on metric mismatch; warn reports mismatch and visualizes current predictions')
     parser.add_argument('--dry_run',action='store_true')
     parser.add_argument('--error_max',type=float,default=20); parser.add_argument('--gain_max',type=float,default=10)
+    parser.add_argument('--overlay_alpha',type=float,default=.70,help='GT difficulty overlay opacity; solid inner outlines remain visible')
     parser.add_argument('--cdf_max',type=float,default=30); parser.add_argument('--allow_partial',action='store_true')
     args=parser.parse_args()
     if args.command=='export' and (not args.testpath or args.series=='all'):
@@ -681,6 +682,7 @@ def main():
     if args.examples_per_category <= 0: parser.error('--examples_per_category must be positive')
     if min(args.error_max,args.gain_max,args.cdf_max)<=0: parser.error('Plot bounds must be positive')
     if args.verify_atol < 0 or args.verify_rtol < 0: parser.error('Verification tolerances must be nonnegative')
+    if not 0 <= args.overlay_alpha <= 1: parser.error('--overlay_alpha must be between 0 and 1')
     series=list(SERIES) if args.series=='all' else [args.series]
     for s in series:
         if args.command=='stats': stat_figures(args,s)
