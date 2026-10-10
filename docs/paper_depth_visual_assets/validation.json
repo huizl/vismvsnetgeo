@@ -1,0 +1,226 @@
+{
+  "source_manuscript_sha256": "5ce55b53f36c1ec1b902d0a70b82a7c926927250174f78ec995ad76768229116",
+  "source_manuscript_unchanged": true,
+  "output": "docs/PAPER_DEPTH_ESTIMATION_WITH_VISUALIZATIONS.md",
+  "equations": 26,
+  "references": 19,
+  "figures": 18,
+  "real_cases": 12,
+  "case_arrays_vs_csv_checked": true,
+  "case_region_rows": 216,
+  "manuscript_appendix_metric_cells_checked": 1120,
+  "population_checks": [
+    {
+      "series": "View5",
+      "analysis_config": "Base",
+      "raw_model_type": "range",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 7.281193622884615,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View5",
+      "analysis_config": "Base+A",
+      "raw_model_type": "oa_range",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 6.920048262236731,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View5",
+      "analysis_config": "Base+B",
+      "raw_model_type": "vis",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 5.595951571945315,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View5",
+      "analysis_config": "Base+C",
+      "raw_model_type": "range_hyp",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 7.049476661846101,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View5",
+      "analysis_config": "Base+A+B",
+      "raw_model_type": "oa",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 5.617841565147166,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View5",
+      "analysis_config": "Base+A+C",
+      "raw_model_type": "oa_full",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 7.00054333099435,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View5",
+      "analysis_config": "Base+B+C",
+      "raw_model_type": "hyp",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 5.4927703824684055,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View5",
+      "analysis_config": "Base+A+B+C",
+      "raw_model_type": "oa_hyp",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 5.574956799169689,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View3",
+      "analysis_config": "Base",
+      "raw_model_type": "range",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 7.633882419420522,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View3",
+      "analysis_config": "Base+A",
+      "raw_model_type": "oa_range",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 7.426888106308129,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View3",
+      "analysis_config": "Base+B",
+      "raw_model_type": "vis",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 6.410131298441681,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View3",
+      "analysis_config": "Base+C",
+      "raw_model_type": "range_hyp",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 7.612280391224478,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View3",
+      "analysis_config": "Base+A+B",
+      "raw_model_type": "oa",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 6.318706242855521,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View3",
+      "analysis_config": "Base+A+C",
+      "raw_model_type": "oa_full",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 7.635935144082872,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View3",
+      "analysis_config": "Base+B+C",
+      "raw_model_type": "hyp",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 5.91886718605961,
+      "weighted_metrics_checked": true
+    },
+    {
+      "series": "View3",
+      "analysis_config": "Base+A+B+C",
+      "raw_model_type": "oa_hyp",
+      "images": 1078,
+      "pixels": 16254332,
+      "eval_nviews": 5,
+      "region_nviews": 5,
+      "abs": 6.233294685544597,
+      "weighted_metrics_checked": true
+    }
+  ],
+  "reproduction": [
+    {
+      "series": "View5",
+      "config": "Base",
+      "failed_checks": 24,
+      "total_checks": 420,
+      "max_abs_delta_mm": 0.016925811767578125,
+      "max_acc2_delta_pp": 0.24570024570024496
+    },
+    {
+      "series": "View5",
+      "config": "Base+A+B+C",
+      "failed_checks": 10,
+      "total_checks": 420,
+      "max_abs_delta_mm": 0.008912086486816406,
+      "max_acc2_delta_pp": 0.15698587127158659
+    },
+    {
+      "series": "View3",
+      "config": "Base",
+      "failed_checks": 21,
+      "total_checks": 420,
+      "max_abs_delta_mm": 0.02719879150390625,
+      "max_acc2_delta_pp": 0.14749262536873087
+    },
+    {
+      "series": "View3",
+      "config": "Base+A+B+C",
+      "failed_checks": 28,
+      "total_checks": 420,
+      "max_abs_delta_mm": 0.01985931396484375,
+      "max_acc2_delta_pp": 0.1825928180158254
+    }
+  ],
+  "baseline_identity_verified": false,
+  "identity_note": "Analysis labels retained. Raw B switch is inverted relative to analysis B; no original-baseline identity or causal switch validation is implied."
+}

@@ -1,0 +1,5 @@
+scan12_view13_light3: Complex occlusion dominant. Base and Base+A+B+C use the same GT and source views.
+Depth colors: 553.982-1089.901 mm; absolute-error colors: 0-20 mm; error-reduction colors: -10 to 10 mm.
+Error reduction = abs(Base-GT) - abs(Base+A+B+C-GT): red means improvement, blue means degradation, white means zero. Yellow error-map contours denote fixed GT large-disparity and >=2-source occlusion regions.
+No colorbars or axis ticks are drawn. Display clipping never changes numeric metrics.
+Selected by descending full-image Abs reduction from the original per-image CSV: 70.981%. A selected improvement example is not a representative estimate of the test set.

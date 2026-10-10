@@ -1,0 +1,404 @@
+{
+  "schema_version": 3,
+  "sample": "scan4_view26_light3",
+  "analysis_configs": [
+    "Base",
+    "Base+A+B+C"
+  ],
+  "scene_category": "joint_difficulty",
+  "scene_geometry": {
+    "valid_pixels": 14595,
+    "large_disparity_pixels": 2919,
+    "occluded_ge2_pixels": 1624,
+    "joint_ge2_pixels": 763,
+    "large_disparity_fraction": 0.2,
+    "occluded_ge2_fraction": 0.11127098321342925,
+    "joint_ge2_fraction": 0.05227817745803357,
+    "joint_fraction_of_large": 0.26139088729016785,
+    "joint_fraction_of_occlusion": 0.4698275862068966,
+    "disparity_p80_px": 23.395723342895508,
+    "disparity_max_px": 41.346309661865234
+  },
+  "depth_min_mm": 559.0294189453125,
+  "depth_max_mm": 1110.3182373046875,
+  "error_max_mm": 20,
+  "gain_max_mm": 10,
+  "disparity_max_px": 41.346309661865234,
+  "gain_definition": "abs(Base-GT) - abs(Base+A+B+C-GT)",
+  "gain_colors": {
+    "positive": "red",
+    "negative": "blue",
+    "zero": "white"
+  },
+  "yellow_contours": "fixed GT large disparity and >=2 occluded source views",
+  "occluded_ge2_definition": "source occlusion count >= 2, not majority fraction",
+  "occlusion_ratio_definition": "occluded source count / GT-comparable source count",
+  "metric_source": "current exported arrays; unclipped errors",
+  "selection_ranking": {
+    "ranking_metric": "full_image_abs_reduction_pct",
+    "ranking_source": "original per-image CSV",
+    "base_abs": 17.05274772644043,
+    "full_model_abs": 7.1681623458862305,
+    "abs_reduction_pct": 57.96476637737428
+  },
+  "csv_reproduction": {
+    "Base": {
+      "analysis_config": "Base",
+      "series": "View5",
+      "verify_mode": "warn",
+      "matches_original_csv": false,
+      "failed_checks": 24,
+      "total_checks": 420,
+      "atol": 0.001,
+      "rtol": 0.0001,
+      "sample_failures": {
+        "scan12_view11_light3": 1,
+        "scan12_view13_light3": 0,
+        "scan13_view03_light3": 11,
+        "scan34_view17_light3": 4,
+        "scan4_view13_light3": 5,
+        "scan4_view26_light3": 3
+      },
+      "figure_metric_source": "current exported predictions; no substitution with original CSV",
+      "worst_differences": [
+        {
+          "metric": "abs",
+          "failed": 13,
+          "checked": 42,
+          "max_abs_delta": 0.016925811767578125,
+          "sample": "scan4_view13_light3",
+          "region": "large_disp_and_occluded",
+          "original": "44.60298156738281",
+          "exported": "44.586055755615234"
+        },
+        {
+          "metric": "acc2",
+          "failed": 4,
+          "checked": 42,
+          "max_abs_delta": 0.0024570024570024496,
+          "sample": "scan34_view17_light3",
+          "region": "boundary_and_occluded",
+          "original": "0.20638820638820637",
+          "exported": "0.20393120393120392"
+        },
+        {
+          "metric": "acc4",
+          "failed": 3,
+          "checked": 42,
+          "max_abs_delta": 0.0024630541871921152,
+          "sample": "scan13_view03_light3",
+          "region": "large_disp_and_occluded",
+          "original": "0.4605911330049261",
+          "exported": "0.4630541871921182"
+        },
+        {
+          "metric": "acc8",
+          "failed": 4,
+          "checked": 42,
+          "max_abs_delta": 0.0024630541871920597,
+          "sample": "scan13_view03_light3",
+          "region": "large_disp_and_occluded",
+          "original": "0.9236453201970444",
+          "exported": "0.9261083743842364"
+        },
+        {
+          "metric": "stage1_in_range",
+          "failed": 0,
+          "checked": 42,
+          "max_abs_delta": 0.0,
+          "sample": "scan4_view13_light3",
+          "region": "full",
+          "original": "0.8654873355924415",
+          "exported": "0.8654873355924415"
+        },
+        {
+          "metric": "stage2_in_range",
+          "failed": 0,
+          "checked": 42,
+          "max_abs_delta": 0.0,
+          "sample": "scan4_view13_light3",
+          "region": "full",
+          "original": "0.8687611280225145",
+          "exported": "0.8687611280225145"
+        },
+        {
+          "metric": "stage3_in_range",
+          "failed": 0,
+          "checked": 42,
+          "max_abs_delta": 0.0003291639236339128,
+          "sample": "scan13_view03_light3",
+          "region": "large_disparity",
+          "original": "0.989137590520079",
+          "exported": "0.9888084265964451"
+        },
+        {
+          "metric": "stage1_range_width",
+          "failed": 0,
+          "checked": 42,
+          "max_abs_delta": 0.0,
+          "sample": "scan4_view13_light3",
+          "region": "full",
+          "original": "188.0",
+          "exported": "188.0"
+        },
+        {
+          "metric": "stage2_range_width",
+          "failed": 0,
+          "checked": 42,
+          "max_abs_delta": 0.002819061279296875,
+          "sample": "scan4_view13_light3",
+          "region": "large_disp_and_occluded",
+          "original": "50.62393569946289",
+          "exported": "50.621116638183594"
+        },
+        {
+          "metric": "stage3_range_width",
+          "failed": 0,
+          "checked": 42,
+          "max_abs_delta": 0.0021724700927734375,
+          "sample": "scan13_view03_light3",
+          "region": "full",
+          "original": "17.2861385345459",
+          "exported": "17.288311004638672"
+        }
+      ]
+    },
+    "Base+A+B+C": {
+      "analysis_config": "Base+A+B+C",
+      "series": "View5",
+      "verify_mode": "warn",
+      "matches_original_csv": false,
+      "failed_checks": 10,
+      "total_checks": 420,
+      "atol": 0.001,
+      "rtol": 0.0001,
+      "sample_failures": {
+        "scan12_view11_light3": 0,
+        "scan12_view13_light3": 1,
+        "scan13_view03_light3": 6,
+        "scan34_view17_light3": 0,
+        "scan4_view13_light3": 3,
+        "scan4_view26_light3": 0
+      },
+      "figure_metric_source": "current exported predictions; no substitution with original CSV",
+      "worst_differences": [
+        {
+          "metric": "abs",
+          "failed": 9,
+          "checked": 42,
+          "max_abs_delta": 0.008912086486816406,
+          "sample": "scan13_view03_light3",
+          "region": "boundary",
+          "original": "4.563391208648682",
+          "exported": "4.554479122161865"
+        },
+        {
+          "metric": "acc2",
+          "failed": 1,
+          "checked": 42,
+          "max_abs_delta": 0.0015698587127158659,
+          "sample": "scan12_view13_light3",
+          "region": "boundary_and_occluded",
+          "original": "0.26373626373626374",
+          "exported": "0.2621664050235479"
+        },
+        {
+          "metric": "acc4",
+          "failed": 0,
+          "checked": 42,
+          "max_abs_delta": 0.0008976660682226689,
+          "sample": "scan4_view13_light3",
+          "region": "boundary_and_occluded",
+          "original": "0.388689407540395",
+          "exported": "0.3877917414721723"
+        },
+        {
+          "metric": "acc8",
+          "failed": 0,
+          "checked": 42,
+          "max_abs_delta": 0.0008278145695364003,
+          "sample": "scan12_view13_light3",
+          "region": "large_disp_and_occluded",
+          "original": "0.570364238410596",
+          "exported": "0.5695364238410596"
+        },
+        {
+          "metric": "stage1_in_range",
+          "failed": 0,
+          "checked": 42,
+          "max_abs_delta": 0.0,
+          "sample": "scan4_view13_light3",
+          "region": "full",
+          "original": "0.8654873355924415",
+          "exported": "0.8654873355924415"
+        },
+        {
+          "metric": "stage2_in_range",
+          "failed": 0,
+          "checked": 42,
+          "max_abs_delta": 0.0,
+          "sample": "scan4_view13_light3",
+          "region": "full",
+          "original": "0.9586468324622365",
+          "exported": "0.9586468324622365"
+        },
+        {
+          "metric": "stage3_in_range",
+          "failed": 0,
+          "checked": 42,
+          "max_abs_delta": 0.0003291639236340238,
+          "sample": "scan13_view03_light3",
+          "region": "large_disparity",
+          "original": "0.9914417379855168",
+          "exported": "0.9911125740618828"
+        },
+        {
+          "metric": "stage1_range_width",
+          "failed": 0,
+          "checked": 42,
+          "max_abs_delta": 0.0,
+          "sample": "scan4_view13_light3",
+          "region": "full",
+          "original": "188.0",
+          "exported": "188.0"
+        },
+        {
+          "metric": "stage2_range_width",
+          "failed": 0,
+          "checked": 42,
+          "max_abs_delta": 0.0,
+          "sample": "scan4_view13_light3",
+          "region": "full",
+          "original": "62.0",
+          "exported": "62.0"
+        },
+        {
+          "metric": "stage3_range_width",
+          "failed": 0,
+          "checked": 42,
+          "max_abs_delta": 2.86102294921875e-06,
+          "sample": "scan12_view13_light3",
+          "region": "boundary_and_occluded",
+          "original": "14.999994277954102",
+          "exported": "14.99999713897705"
+        }
+      ]
+    }
+  },
+  "panels": [
+    {
+      "position": 1,
+      "title": "Reference RGB",
+      "png": "panels/reference_rgb.png",
+      "title_png": "panels/with_title/reference_rgb.png",
+      "title_pdf": "panels/with_title/reference_rgb.pdf"
+    },
+    {
+      "position": 2,
+      "title": "GT depth",
+      "png": "panels/gt_depth.png",
+      "title_png": "panels/with_title/gt_depth.png",
+      "title_pdf": "panels/with_title/gt_depth.pdf"
+    },
+    {
+      "position": 3,
+      "title": "GT displacement",
+      "png": "panels/large_disparity_map.png",
+      "title_png": "panels/with_title/large_disparity_map.png",
+      "title_pdf": "panels/with_title/large_disparity_map.pdf"
+    },
+    {
+      "position": 4,
+      "title": "Source occlusion ratio",
+      "png": "panels/source_occlusion_ratio.png",
+      "title_png": "panels/with_title/source_occlusion_ratio.png",
+      "title_pdf": "panels/with_title/source_occlusion_ratio.pdf"
+    },
+    {
+      "position": 5,
+      "title": "Red: disparity; green: occlusion; yellow: both",
+      "png": "panels/difficulty_overlay.png",
+      "title_png": "panels/with_title/difficulty_overlay.png",
+      "title_pdf": "panels/with_title/difficulty_overlay.pdf"
+    },
+    {
+      "position": 6,
+      "title": "Base depth",
+      "png": "panels/base_depth.png",
+      "title_png": "panels/with_title/base_depth.png",
+      "title_pdf": "panels/with_title/base_depth.pdf"
+    },
+    {
+      "position": 7,
+      "title": "Base+A+B+C depth",
+      "png": "panels/full_model_depth.png",
+      "title_png": "panels/with_title/full_model_depth.png",
+      "title_pdf": "panels/with_title/full_model_depth.pdf"
+    },
+    {
+      "position": 8,
+      "title": "Base absolute error",
+      "png": "panels/base_abs_error.png",
+      "title_png": "panels/with_title/base_abs_error.png",
+      "title_pdf": "panels/with_title/base_abs_error.pdf"
+    },
+    {
+      "position": 9,
+      "title": "Base+A+B+C absolute error",
+      "png": "panels/full_model_abs_error.png",
+      "title_png": "panels/with_title/full_model_abs_error.png",
+      "title_pdf": "panels/with_title/full_model_abs_error.pdf"
+    },
+    {
+      "position": 10,
+      "title": "Error reduction: red better / blue worse",
+      "png": "panels/error_gain.png",
+      "title_png": "panels/with_title/error_gain.png",
+      "title_pdf": "panels/with_title/error_gain.pdf"
+    },
+    {
+      "position": 11,
+      "title": "Occluded in >=1 source view",
+      "png": "panels/occluded_any_mask.png",
+      "title_png": "panels/with_title/occluded_any_mask.png",
+      "title_pdf": "panels/with_title/occluded_any_mask.pdf"
+    },
+    {
+      "position": 12,
+      "title": "Occluded in >=2 source views",
+      "png": "panels/occluded_ge2_mask.png",
+      "title_png": "panels/with_title/occluded_ge2_mask.png",
+      "title_pdf": "panels/with_title/occluded_ge2_mask.pdf"
+    },
+    {
+      "position": 13,
+      "title": "Large disparity mask",
+      "png": "panels/large_disparity_mask.png",
+      "title_png": "panels/with_title/large_disparity_mask.png",
+      "title_pdf": "panels/with_title/large_disparity_mask.pdf"
+    },
+    {
+      "position": 14,
+      "title": "Large disparity & >=1 occluded view",
+      "png": "panels/large_disp_and_occluded_any_mask.png",
+      "title_png": "panels/with_title/large_disp_and_occluded_any_mask.png",
+      "title_pdf": "panels/with_title/large_disp_and_occluded_any_mask.pdf"
+    },
+    {
+      "position": 15,
+      "title": "Large disparity & >=2 occluded views",
+      "png": "panels/large_disp_and_occluded_ge2_mask.png",
+      "title_png": "panels/with_title/large_disp_and_occluded_ge2_mask.png",
+      "title_pdf": "panels/with_title/large_disp_and_occluded_ge2_mask.pdf"
+    }
+  ],
+  "show_colorbars": false,
+  "show_axis_ticks": false,
+  "overlay_alpha": 0.7,
+  "overlay_outline": "2 pixels inside GT class masks; no mask expansion",
+  "overlay_colors": {
+    "large_disparity_only": "#ff0000",
+    "occluded_ge2_only": "#00ff00",
+    "intersection": "#ffff00"
+  }
+}
