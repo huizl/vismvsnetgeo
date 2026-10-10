@@ -1,0 +1,12 @@
+{
+  "source_sha256": "184094dbb92d307857d0737b5e775b77c82c7268f928aa2b1771ddacb854f14b",
+  "data_tables": 28,
+  "non_math_table_cells_compared": 2303,
+  "native_formulas_matched": 149,
+  "scene_panels_verified_original": 180,
+  "source_text_blocks_preserved": 200,
+  "visio_pages": 10,
+  "visio_native_shapes": 418,
+  "visio_foreign_bitmap_shapes": 0,
+  "all_checks_passed": true
+}

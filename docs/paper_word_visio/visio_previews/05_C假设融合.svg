@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- 由 Microsoft Visio, SVG Export 生成 05_C假设融合.svg 05_C假设融合 -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events"
+		xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/" width="10in" height="10in" viewBox="0 0 720 720"
+		xml:space="preserve" color-interpolation-filters="sRGB" class="st13">
+	<v:documentProperties v:langID="2052" v:metric="true" v:viewMarkup="false"/>
+
+	<style type="text/css">
+	<![CDATA[
+		.st1 {fill:none;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0.75}
+		.st2 {fill:#000000;font-family:微软雅黑;font-size:2.08333em;font-weight:bold}
+		.st3 {font-family:宋体;font-size:1em}
+		.st4 {fill:#d7f7ef;stroke:#008779;stroke-linecap:round;stroke-linejoin:round;stroke-width:1}
+		.st5 {fill:#000000;font-family:宋体;font-size:1.5em}
+		.st6 {font-family:微软雅黑;font-size:1em}
+		.st7 {font-family:Cambria Math;font-size:1em}
+		.st8 {font-family:Times New Roman;font-size:1em}
+		.st9 {fill:#000000;font-family:微软雅黑;font-size:1.5em}
+		.st10 {font-size:1em}
+		.st11 {marker-end:url(#mrkr4-100);stroke:#008779;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.2}
+		.st12 {fill:#008779;fill-opacity:1;stroke:#008779;stroke-opacity:1;stroke-width:0.32258064516129}
+		.st13 {fill:none;fill-rule:evenodd;font-size:12px;overflow:visible;stroke-linecap:square;stroke-miterlimit:3}
+	]]>
+	</style>
+
+	<defs id="Markers">
+		<g id="lend4">
+			<path d="M 2 1 L 0 0 L 2 -1 L 2 1 " style="stroke:none"/>
+		</g>
+		<marker id="mrkr4-100" class="st12" v:arrowType="4" v:arrowSize="2" v:setback="6.2" refX="-6.2" orient="auto"
+				markerUnits="strokeWidth" overflow="visible">
+			<use xlink:href="#lend4" transform="scale(-3.1,-3.1) "/>
+		</marker>
+	</defs>
+	<g v:mID="7" v:index="5" v:groupContext="foregroundPage">
+		<title>05_C假设融合</title>
+		<v:pageProperties v:drawingScale="0.0393701" v:pageScale="0.0393701" v:drawingUnits="24" v:shadowOffsetX="8.50394"
+				v:shadowOffsetY="-8.50394"/>
+		<g id="shape1-1" v:mID="1" v:groupContext="shape" transform="translate(36,-648)">
+			<title>title</title>
+			<desc>C 深度假设感知源视图融合</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="324" cy="698.4" width="648" height="43.2"/>
+			<rect x="0" y="676.8" width="648" height="43.2" class="st1"/>
+			<text x="170.1" y="706.63" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>C  <tspan class="st3">深度假设感知源视图融合</tspan></text>		</g>
+		<g id="shape2-5" v:mID="2" v:groupContext="shape" transform="translate(93.6,-543.6)">
+			<title>C_0</title>
+			<desc>逐源隐变量 Vₛᵗ 与基础 logit −uₛᵗ</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="266.4" cy="680.4" width="532.81" height="79.2"/>
+			<rect x="0" y="640.8" width="532.8" height="79.2" class="st4"/>
+			<text x="135.16" y="686.33" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>逐源隐变量<tspan
+						class="st6"> </tspan><tspan class="st6">V</tspan><tspan class="st7">ₛᵗ</tspan><tspan class="st6"> </tspan>与基础<tspan
+						class="st6"> </tspan><tspan class="st6">logit </tspan><tspan class="st7">−</tspan><tspan class="st6">u</tspan><tspan
+						class="st7">ₛᵗ</tspan></text>		</g>
+		<g id="shape3-17" v:mID="3" v:groupContext="shape" transform="translate(93.6,-455.76)">
+			<title>C_1</title>
+			<desc>十一通道输入 [Vₛᵗ, tanh aₛᵗ, Pₛᵗ, ξᵗ]</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="266.4" cy="680.4" width="532.81" height="79.2"/>
+			<rect x="0" y="640.8" width="532.8" height="79.2" class="st4"/>
+			<text x="212.4" y="674.48" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>十一通道输入<v:newlineChar/><tspan
+						x="180.62" dy="1.317em" class="st6">[V</tspan><tspan class="st7">ₛᵗ</tspan><tspan class="st6">, tanh a</tspan><tspan
+						class="st7">ₛᵗ</tspan><tspan class="st6">, P</tspan><tspan class="st7">ₛᵗ</tspan><tspan class="st6">, </tspan>ξ<tspan
+						class="st8">ᵗ</tspan><tspan class="st6">]</tspan></text>		</g>
+		<g id="shape4-29" v:mID="4" v:groupContext="shape" transform="translate(93.6,-367.92)">
+			<title>C_2</title>
+			<desc>3D Conv → GroupNorm → ReLU 1×1×1 Conv → tanh rₛ,ₖᵗ = ηᵗ tanh ...</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="266.4" cy="680.4" width="532.81" height="79.2"/>
+			<rect x="0" y="640.8" width="532.8" height="79.2" class="st4"/>
+			<text x="126.57" y="662.62" class="st9" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>3D Conv <tspan
+						class="st3">→</tspan> GroupNorm <tspan class="st3">→</tspan> ReLU<v:newlineChar/><tspan x="178.8"
+						dy="1.317em" class="st10">1×1×1 Conv </tspan><tspan class="st3">→</tspan> tanh<v:newlineChar/><tspan
+						x="184.59" dy="1.317em" class="st10">r</tspan><tspan class="st7">ₛ</tspan>,<tspan class="st7">ₖᵗ</tspan> = <tspan
+						class="st3">η</tspan><tspan class="st8">ᵗ</tspan> tanh <tspan class="st3">ζ</tspan><tspan class="st7">ₛ</tspan>,<tspan
+						class="st7">ₖᵗ</tspan></text>		</g>
+		<g id="shape5-44" v:mID="5" v:groupContext="shape" transform="translate(93.6,-280.08)">
+			<title>C_3</title>
+			<desc>基础分数与残差相加 ℓₛ,ₖᵗ = −uₛᵗ + rₛ,ₖᵗ</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="266.4" cy="680.4" width="532.81" height="79.2"/>
+			<rect x="0" y="640.8" width="532.8" height="79.2" class="st4"/>
+			<text x="185.4" y="675.36" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>基础分数与残差相加<v:newlineChar/><tspan
+						x="194.81" dy="1.243em" class="st7">ℓ</tspan><tspan class="st7">ₛ</tspan><tspan class="st6">,</tspan><tspan
+						class="st7">ₖᵗ</tspan><tspan class="st6"> </tspan><tspan class="st6">= </tspan><tspan class="st7">−</tspan><tspan
+						class="st6">u</tspan><tspan class="st7">ₛᵗ</tspan><tspan class="st6"> </tspan><tspan class="st6">+ r</tspan><tspan
+						class="st7">ₛ</tspan><tspan class="st6">,</tspan><tspan class="st7">ₖᵗ</tspan></text>		</g>
+		<g id="shape6-61" v:mID="6" v:groupContext="shape" transform="translate(93.6,-192.24)">
+			<title>C_4</title>
+			<desc>在源视图维度归一化 wₛ,ₖᵗ = softmaxₛ(ℓₛ,ₖᵗ)</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="266.4" cy="680.4" width="532.81" height="79.2"/>
+			<rect x="0" y="640.8" width="532.8" height="79.2" class="st4"/>
+			<text x="185.4" y="675.36" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>在源视图维度归一化<v:newlineChar/><tspan
+						x="177.45" dy="1.243em" class="st6">w</tspan><tspan class="st7">ₛ</tspan><tspan class="st6">,</tspan><tspan
+						class="st7">ₖᵗ</tspan><tspan class="st6"> </tspan><tspan class="st6">= softmax</tspan><tspan class="st7">ₛ</tspan><tspan
+						class="st6">(</tspan><tspan class="st7">ℓ</tspan><tspan class="st7">ₛ</tspan><tspan class="st6">,</tspan><tspan
+						class="st7">ₖᵗ</tspan><tspan class="st6">)</tspan></text>		</g>
+		<g id="shape7-77" v:mID="7" v:groupContext="shape" transform="translate(93.6,-104.4)">
+			<title>C_5</title>
+			<desc>逐候选加权融合 Vᵗ = Σₛ wₛ,ₖᵗ Vₛᵗ 第二次正则化与阶段深度回归</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="266.4" cy="680.4" width="532.81" height="79.2"/>
+			<rect x="0" y="640.8" width="532.8" height="79.2" class="st4"/>
+			<text x="134.22" y="674.48" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>逐候选加权融合<tspan
+						class="st6"> </tspan><tspan class="st6">V</tspan><tspan class="st8">ᵗ</tspan><tspan class="st6"> </tspan><tspan
+						class="st6">= </tspan>Σ<tspan class="st7">ₛ</tspan><tspan class="st6"> </tspan><tspan class="st6">w</tspan><tspan
+						class="st7">ₛ</tspan><tspan class="st6">,</tspan><tspan class="st7">ₖᵗ</tspan><tspan class="st6"> </tspan><tspan
+						class="st6">V</tspan><tspan class="st7">ₛᵗ<v:newlineChar/></tspan><tspan x="149.4" dy="1.317em"
+						class="st10">第二次正则化与阶段深度回归</tspan></text>		</g>
+		<g id="shape8-95" v:mID="8" v:groupContext="shape" transform="translate(1080,176.4) rotate(90)">
+			<title>工作表.8</title>
+			<path d="M0 720 L1.2 720" class="st11"/>
+		</g>
+		<g id="shape9-101" v:mID="9" v:groupContext="shape" transform="translate(1080,264.24) rotate(90)">
+			<title>工作表.9</title>
+			<path d="M0 720 L1.2 720" class="st11"/>
+		</g>
+		<g id="shape10-106" v:mID="10" v:groupContext="shape" transform="translate(1080,352.08) rotate(90)">
+			<title>工作表.10</title>
+			<path d="M0 720 L1.2 720" class="st11"/>
+		</g>
+		<g id="shape11-111" v:mID="11" v:groupContext="shape" transform="translate(1080,439.92) rotate(90)">
+			<title>工作表.11</title>
+			<path d="M0 720 L1.2 720" class="st11"/>
+		</g>
+		<g id="shape12-116" v:mID="12" v:groupContext="shape" transform="translate(1080,527.76) rotate(90)">
+			<title>工作表.12</title>
+			<path d="M0 720 L1.2 720" class="st11"/>
+		</g>
+	</g>
+</svg>

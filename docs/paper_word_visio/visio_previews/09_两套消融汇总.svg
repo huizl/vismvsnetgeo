@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- 由 Microsoft Visio, SVG Export 生成 09_两套消融汇总.svg 09_两套消融汇总 -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events"
+		xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/" width="16in" height="10in" viewBox="0 0 1152 720"
+		xml:space="preserve" color-interpolation-filters="sRGB" class="st12">
+	<v:documentProperties v:langID="2052" v:metric="true" v:viewMarkup="false"/>
+
+	<style type="text/css">
+	<![CDATA[
+		.st1 {fill:none;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0.75}
+		.st2 {fill:#000000;font-family:宋体;font-size:1.91666em;font-weight:bold}
+		.st3 {font-family:微软雅黑;font-size:1em}
+		.st4 {fill:#000000;font-family:微软雅黑;font-size:1.75001em;font-weight:bold}
+		.st5 {fill:#000000;font-family:宋体;font-size:1.24999em;font-weight:bold}
+		.st6 {fill:#aab9ca;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0.75}
+		.st7 {fill:#000000;font-family:微软雅黑;font-size:1.16666em}
+		.st8 {fill:#489888;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0.75}
+		.st9 {fill:#000000;font-family:宋体;font-size:1.16666em}
+		.st10 {fill:#000000;font-family:微软雅黑;font-size:1.24999em}
+		.st11 {font-family:宋体;font-size:1em}
+		.st12 {fill:none;fill-rule:evenodd;font-size:12px;overflow:visible;stroke-linecap:square;stroke-miterlimit:3}
+	]]>
+	</style>
+
+	<g v:mID="11" v:index="9" v:groupContext="foregroundPage">
+		<title>09_两套消融汇总</title>
+		<v:pageProperties v:drawingScale="0.0393701" v:pageScale="0.0393701" v:drawingUnits="24" v:shadowOffsetX="8.50394"
+				v:shadowOffsetY="-8.50394"/>
+		<g id="shape1-1" v:mID="1" v:groupContext="shape" transform="translate(28.8,-662.4)">
+			<title>title</title>
+			<desc>完整配置与 Base 的困难区域 Abs 对照</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="547.2" cy="702" width="1094.4" height="36"/>
+			<rect x="0" y="684" width="1094.4" height="36" class="st1"/>
+			<text x="346.1" y="709.57" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>完整配置与<tspan
+						class="st3"> </tspan><tspan class="st3">Base </tspan>的困难区域<tspan class="st3"> </tspan><tspan class="st3">Abs </tspan>对照</text>		</g>
+		<g id="shape2-8" v:mID="2" v:groupContext="shape" transform="translate(50.4,-604.8)">
+			<title>s0</title>
+			<desc>View5</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="252" cy="702" width="504" height="36"/>
+			<rect x="0" y="684" width="504" height="36" class="st1"/>
+			<text x="219.86" y="708.3" class="st4" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>View5</text>		</g>
+		<g id="shape3-11" v:mID="3" v:groupContext="shape" transform="translate(50.4,-504)">
+			<title>l0_0</title>
+			<desc>整体</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="696.6" width="115.2" height="46.8"/>
+			<rect x="0" y="673.2" width="115.2" height="46.8" class="st1"/>
+			<text x="42.54" y="701.54" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>整体</text>		</g>
+		<g id="shape4-14" v:mID="4" v:groupContext="shape" transform="translate(180,-525.6)">
+			<title>bar0_0_0</title>
+			<rect x="0" y="691.2" width="32.2613" height="28.8" class="st6"/>
+		</g>
+		<g id="shape5-16" v:mID="5" v:groupContext="shape" transform="translate(217.301,-525.6)">
+			<title>v0_0_0</title>
+			<desc>Base 7.281</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="21.95" y="709.8" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base 7.281</text>		</g>
+		<g id="shape6-19" v:mID="6" v:groupContext="shape" transform="translate(180,-483.84)">
+			<title>bar0_0_1</title>
+			<rect x="0" y="691.2" width="24.7013" height="28.8" class="st8"/>
+		</g>
+		<g id="shape7-21" v:mID="7" v:groupContext="shape" transform="translate(209.741,-483.84)">
+			<title>v0_0_1</title>
+			<desc>完整 5.575</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="23.42" y="710.21" class="st9" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>完整<tspan class="st3"> </tspan><tspan
+						class="st3">5.575</tspan></text>		</g>
+		<g id="shape8-26" v:mID="8" v:groupContext="shape" transform="translate(50.4,-385.2)">
+			<title>l0_1</title>
+			<desc>大视差</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="696.6" width="115.2" height="46.8"/>
+			<rect x="0" y="673.2" width="115.2" height="46.8" class="st1"/>
+			<text x="35.01" y="701.54" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>大视差</text>		</g>
+		<g id="shape9-29" v:mID="9" v:groupContext="shape" transform="translate(180,-406.8)">
+			<title>bar0_1_0</title>
+			<rect x="0" y="691.2" width="95.1228" height="28.8" class="st6"/>
+		</g>
+		<g id="shape10-31" v:mID="10" v:groupContext="shape" transform="translate(280.163,-406.8)">
+			<title>v0_1_0</title>
+			<desc>Base 21.469</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="17.85" y="709.8" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base 21.469</text>		</g>
+		<g id="shape11-34" v:mID="11" v:groupContext="shape" transform="translate(180,-365.04)">
+			<title>bar0_1_1</title>
+			<rect x="0" y="691.2" width="65.3151" height="28.8" class="st8"/>
+		</g>
+		<g id="shape12-36" v:mID="12" v:groupContext="shape" transform="translate(250.355,-365.04)">
+			<title>v0_1_1</title>
+			<desc>完整 14.741</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="19.32" y="710.21" class="st9" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>完整<tspan class="st3"> </tspan><tspan
+						class="st3">14.741</tspan></text>		</g>
+		<g id="shape13-41" v:mID="13" v:groupContext="shape" transform="translate(50.4,-266.4)">
+			<title>l0_2</title>
+			<desc>任一源遮挡</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="696.6" width="115.2" height="46.8"/>
+			<rect x="0" y="673.2" width="115.2" height="46.8" class="st1"/>
+			<text x="19.95" y="701.54" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>任一源遮挡</text>		</g>
+		<g id="shape14-44" v:mID="14" v:groupContext="shape" transform="translate(180,-288)">
+			<title>bar0_2_0</title>
+			<rect x="0" y="691.2" width="159.222" height="28.8" class="st6"/>
+		</g>
+		<g id="shape15-46" v:mID="15" v:groupContext="shape" transform="translate(344.262,-288)">
+			<title>v0_2_0</title>
+			<desc>Base 35.936</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="17.85" y="709.8" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base 35.936</text>		</g>
+		<g id="shape16-49" v:mID="16" v:groupContext="shape" transform="translate(180,-246.24)">
+			<title>bar0_2_1</title>
+			<rect x="0" y="691.2" width="133.475" height="28.8" class="st8"/>
+		</g>
+		<g id="shape17-51" v:mID="17" v:groupContext="shape" transform="translate(318.515,-246.24)">
+			<title>v0_2_1</title>
+			<desc>完整 30.125</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="19.32" y="710.21" class="st9" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>完整<tspan class="st3"> </tspan><tspan
+						class="st3">30.125</tspan></text>		</g>
+		<g id="shape18-56" v:mID="18" v:groupContext="shape" transform="translate(50.4,-147.6)">
+			<title>l0_3</title>
+			<desc>大视差∩遮挡</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="696.6" width="115.2" height="46.8"/>
+			<rect x="0" y="673.2" width="115.2" height="46.8" class="st1"/>
+			<text x="12.42" y="701.54" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>大视差∩遮挡</text>		</g>
+		<g id="shape19-59" v:mID="19" v:groupContext="shape" transform="translate(180,-169.2)">
+			<title>bar0_3_0</title>
+			<rect x="0" y="691.2" width="258.43" height="28.8" class="st6"/>
+		</g>
+		<g id="shape20-61" v:mID="20" v:groupContext="shape" transform="translate(443.47,-169.2)">
+			<title>v0_3_0</title>
+			<desc>Base 58.326</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="17.85" y="709.8" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base 58.326</text>		</g>
+		<g id="shape21-64" v:mID="21" v:groupContext="shape" transform="translate(180,-127.44)">
+			<title>bar0_3_1</title>
+			<rect x="0" y="691.2" width="204.816" height="28.8" class="st8"/>
+		</g>
+		<g id="shape22-66" v:mID="22" v:groupContext="shape" transform="translate(389.856,-127.44)">
+			<title>v0_3_1</title>
+			<desc>完整 46.226</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="19.32" y="710.21" class="st9" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>完整<tspan class="st3"> </tspan><tspan
+						class="st3">46.226</tspan></text>		</g>
+		<g id="shape23-71" v:mID="23" v:groupContext="shape" transform="translate(612,-604.8)">
+			<title>s1</title>
+			<desc>View3</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="252" cy="702" width="504" height="36"/>
+			<rect x="0" y="684" width="504" height="36" class="st1"/>
+			<text x="219.86" y="708.3" class="st4" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>View3</text>		</g>
+		<g id="shape24-74" v:mID="24" v:groupContext="shape" transform="translate(612,-504)">
+			<title>l1_0</title>
+			<desc>整体</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="696.6" width="115.2" height="46.8"/>
+			<rect x="0" y="673.2" width="115.2" height="46.8" class="st1"/>
+			<text x="42.54" y="701.54" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>整体</text>		</g>
+		<g id="shape25-77" v:mID="25" v:groupContext="shape" transform="translate(741.6,-525.6)">
+			<title>bar1_0_0</title>
+			<rect x="0" y="691.2" width="33.824" height="28.8" class="st6"/>
+		</g>
+		<g id="shape26-79" v:mID="26" v:groupContext="shape" transform="translate(780.464,-525.6)">
+			<title>v1_0_0</title>
+			<desc>Base 7.634</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="21.95" y="709.8" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base 7.634</text>		</g>
+		<g id="shape27-82" v:mID="27" v:groupContext="shape" transform="translate(741.6,-483.84)">
+			<title>bar1_0_1</title>
+			<rect x="0" y="691.2" width="27.6183" height="28.8" class="st8"/>
+		</g>
+		<g id="shape28-84" v:mID="28" v:groupContext="shape" transform="translate(774.258,-483.84)">
+			<title>v1_0_1</title>
+			<desc>完整 6.233</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="23.42" y="710.21" class="st9" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>完整<tspan class="st3"> </tspan><tspan
+						class="st3">6.233</tspan></text>		</g>
+		<g id="shape29-89" v:mID="29" v:groupContext="shape" transform="translate(612,-385.2)">
+			<title>l1_1</title>
+			<desc>大视差</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="696.6" width="115.2" height="46.8"/>
+			<rect x="0" y="673.2" width="115.2" height="46.8" class="st1"/>
+			<text x="35.01" y="701.54" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>大视差</text>		</g>
+		<g id="shape30-92" v:mID="30" v:groupContext="shape" transform="translate(741.6,-406.8)">
+			<title>bar1_1_0</title>
+			<rect x="0" y="691.2" width="101.64" height="28.8" class="st6"/>
+		</g>
+		<g id="shape31-94" v:mID="31" v:groupContext="shape" transform="translate(848.28,-406.8)">
+			<title>v1_1_0</title>
+			<desc>Base 22.940</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="17.85" y="709.8" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base 22.940</text>		</g>
+		<g id="shape32-97" v:mID="32" v:groupContext="shape" transform="translate(741.6,-365.04)">
+			<title>bar1_1_1</title>
+			<rect x="0" y="691.2" width="73.3268" height="28.8" class="st8"/>
+		</g>
+		<g id="shape33-99" v:mID="33" v:groupContext="shape" transform="translate(819.967,-365.04)">
+			<title>v1_1_1</title>
+			<desc>完整 16.549</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="19.32" y="710.21" class="st9" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>完整<tspan class="st3"> </tspan><tspan
+						class="st3">16.549</tspan></text>		</g>
+		<g id="shape34-104" v:mID="34" v:groupContext="shape" transform="translate(612,-266.4)">
+			<title>l1_2</title>
+			<desc>任一源遮挡</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="696.6" width="115.2" height="46.8"/>
+			<rect x="0" y="673.2" width="115.2" height="46.8" class="st1"/>
+			<text x="19.95" y="701.54" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>任一源遮挡</text>		</g>
+		<g id="shape35-107" v:mID="35" v:groupContext="shape" transform="translate(741.6,-288)">
+			<title>bar1_2_0</title>
+			<rect x="0" y="691.2" width="166.769" height="28.8" class="st6"/>
+		</g>
+		<g id="shape36-109" v:mID="36" v:groupContext="shape" transform="translate(913.409,-288)">
+			<title>v1_2_0</title>
+			<desc>Base 37.639</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="17.85" y="709.8" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base 37.639</text>		</g>
+		<g id="shape37-112" v:mID="37" v:groupContext="shape" transform="translate(741.6,-246.24)">
+			<title>bar1_2_1</title>
+			<rect x="0" y="691.2" width="145.104" height="28.8" class="st8"/>
+		</g>
+		<g id="shape38-114" v:mID="38" v:groupContext="shape" transform="translate(891.744,-246.24)">
+			<title>v1_2_1</title>
+			<desc>完整 32.749</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="19.32" y="710.21" class="st9" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>完整<tspan class="st3"> </tspan><tspan
+						class="st3">32.749</tspan></text>		</g>
+		<g id="shape39-119" v:mID="39" v:groupContext="shape" transform="translate(612,-147.6)">
+			<title>l1_3</title>
+			<desc>大视差∩遮挡</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="696.6" width="115.2" height="46.8"/>
+			<rect x="0" y="673.2" width="115.2" height="46.8" class="st1"/>
+			<text x="12.42" y="701.54" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>大视差∩遮挡</text>		</g>
+		<g id="shape40-122" v:mID="40" v:groupContext="shape" transform="translate(741.6,-169.2)">
+			<title>bar1_3_0</title>
+			<rect x="0" y="691.2" width="274.954" height="28.8" class="st6"/>
+		</g>
+		<g id="shape41-124" v:mID="41" v:groupContext="shape" transform="translate(1021.59,-169.2)">
+			<title>v1_3_0</title>
+			<desc>Base 62.056</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="17.85" y="709.8" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base 62.056</text>		</g>
+		<g id="shape42-127" v:mID="42" v:groupContext="shape" transform="translate(741.6,-127.44)">
+			<title>bar1_3_1</title>
+			<rect x="0" y="691.2" width="225.195" height="28.8" class="st8"/>
+		</g>
+		<g id="shape43-129" v:mID="43" v:groupContext="shape" transform="translate(971.835,-127.44)">
+			<title>v1_3_1</title>
+			<desc>完整 50.825</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="57.6" cy="705.6" width="115.2" height="28.8"/>
+			<rect x="0" y="691.2" width="115.2" height="28.8" class="st1"/>
+			<text x="19.32" y="710.21" class="st9" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>完整<tspan class="st3"> </tspan><tspan
+						class="st3">50.825</tspan></text>		</g>
+		<g id="shape44-134" v:mID="44" v:groupContext="shape" transform="translate(50.4,-28.8)">
+			<title>unit</title>
+			<desc>Abs 单位 mm所有条形、数值与标签均可在 Visio 中单独修改。</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="525.6" cy="702" width="1051.2" height="36"/>
+			<rect x="0" y="684" width="1051.2" height="36" class="st1"/>
+			<text x="306.83" y="706.94" class="st10" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Abs <tspan
+						class="st11">单位</tspan> mm<tspan class="st11">；</tspan><tspan class="st11">所有条形</tspan><tspan class="st11">、</tspan><tspan
+						class="st11">数值与标签均可在</tspan> Visio <tspan class="st11">中单独修改</tspan><tspan class="st11">。</tspan></text>		</g>
+	</g>
+</svg>

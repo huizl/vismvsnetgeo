@@ -1,0 +1,52 @@
+[
+  {
+    "page": "01_总体框架",
+    "shapes": 60,
+    "connectors": 28
+  },
+  {
+    "page": "02_ABC模块",
+    "shapes": 37,
+    "connectors": 15
+  },
+  {
+    "page": "03_A遮挡监督",
+    "shapes": 12,
+    "connectors": 5
+  },
+  {
+    "page": "04_B自适应范围",
+    "shapes": 12,
+    "connectors": 5
+  },
+  {
+    "page": "05_C假设融合",
+    "shapes": 12,
+    "connectors": 5
+  },
+  {
+    "page": "06_训练推理流程",
+    "shapes": 21,
+    "connectors": 10
+  },
+  {
+    "page": "07_View5区域改善",
+    "shapes": 73,
+    "connectors": 0
+  },
+  {
+    "page": "08_View3区域改善",
+    "shapes": 73,
+    "connectors": 0
+  },
+  {
+    "page": "09_两套消融汇总",
+    "shapes": 44,
+    "connectors": 0
+  },
+  {
+    "page": "10_阈值准确率",
+    "shapes": 74,
+    "connectors": 0
+  }
+]

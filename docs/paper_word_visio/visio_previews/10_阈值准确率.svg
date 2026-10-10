@@ -1,0 +1,548 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- 由 Microsoft Visio, SVG Export 生成 10_阈值准确率.svg 10_阈值准确率 -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events"
+		xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/" width="16in" height="10in" viewBox="0 0 1152 720"
+		xml:space="preserve" color-interpolation-filters="sRGB" class="st10">
+	<v:documentProperties v:langID="2052" v:metric="true" v:viewMarkup="false"/>
+
+	<style type="text/css">
+	<![CDATA[
+		.st1 {fill:none;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0.75}
+		.st2 {fill:#000000;font-family:宋体;font-size:1.91666em;font-weight:bold}
+		.st3 {fill:#000000;font-family:微软雅黑;font-size:1.75001em;font-weight:bold}
+		.st4 {fill:#000000;font-family:微软雅黑;font-size:1.41666em;font-weight:bold}
+		.st5 {fill:#000000;font-family:微软雅黑;font-size:1.33333em;font-weight:bold}
+		.st6 {fill:#edf4f8;stroke:#d9d9d9;stroke-linecap:round;stroke-linejoin:round;stroke-width:1}
+		.st7 {fill:#000000;font-family:微软雅黑;font-size:1.33333em}
+		.st8 {fill:#000000;font-family:微软雅黑;font-size:1.24999em}
+		.st9 {font-family:宋体;font-size:1em}
+		.st10 {fill:none;fill-rule:evenodd;font-size:12px;overflow:visible;stroke-linecap:square;stroke-miterlimit:3}
+	]]>
+	</style>
+
+	<g v:mID="12" v:index="10" v:groupContext="foregroundPage">
+		<title>10_阈值准确率</title>
+		<v:pageProperties v:drawingScale="0.0393701" v:pageScale="0.0393701" v:drawingUnits="24" v:shadowOffsetX="8.50394"
+				v:shadowOffsetY="-8.50394"/>
+		<g id="shape1-1" v:mID="1" v:groupContext="shape" transform="translate(28.8,-662.4)">
+			<title>title</title>
+			<desc>八组配置的整体阈值准确率</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="547.2" cy="702" width="1094.4" height="36"/>
+			<rect x="0" y="684" width="1094.4" height="36" class="st1"/>
+			<text x="408.66" y="709.57" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>八组配置的整体阈值准确率</text>		</g>
+		<g id="shape2-4" v:mID="2" v:groupContext="shape" transform="translate(21.6,-612)">
+			<title>s0</title>
+			<desc>View5</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="273.6" cy="705.6" width="547.2" height="28.8"/>
+			<rect x="0" y="691.2" width="547.2" height="28.8" class="st1"/>
+			<text x="241.46" y="711.9" class="st3" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>View5</text>		</g>
+		<g id="shape3-7" v:mID="3" v:groupContext="shape" transform="translate(237.6,-561.6)">
+			<title>h0_0</title>
+			<desc>Acc2</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="702" width="104.4" height="36"/>
+			<rect x="0" y="684" width="104.4" height="36" class="st1"/>
+			<text x="31.78" y="707.1" class="st4" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Acc2</text>		</g>
+		<g id="shape4-10" v:mID="4" v:groupContext="shape" transform="translate(345.6,-561.6)">
+			<title>h0_1</title>
+			<desc>Acc4</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="702" width="104.4" height="36"/>
+			<rect x="0" y="684" width="104.4" height="36" class="st1"/>
+			<text x="31.78" y="707.1" class="st4" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Acc4</text>		</g>
+		<g id="shape5-13" v:mID="5" v:groupContext="shape" transform="translate(453.6,-561.6)">
+			<title>h0_2</title>
+			<desc>Acc8</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="702" width="104.4" height="36"/>
+			<rect x="0" y="684" width="104.4" height="36" class="st1"/>
+			<text x="31.78" y="707.1" class="st4" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Acc8</text>		</g>
+		<g id="shape6-16" v:mID="6" v:groupContext="shape" transform="translate(21.6,-493.2)">
+			<title>r0_0</title>
+			<desc>Base</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="85.7" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base</text>		</g>
+		<g id="shape7-19" v:mID="7" v:groupContext="shape" transform="translate(237.6,-493.2)">
+			<title>c0_0_0</title>
+			<desc>80.30%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>80.30%</text>		</g>
+		<g id="shape8-22" v:mID="8" v:groupContext="shape" transform="translate(345.6,-493.2)">
+			<title>c0_0_1</title>
+			<desc>87.85%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>87.85%</text>		</g>
+		<g id="shape9-25" v:mID="9" v:groupContext="shape" transform="translate(453.6,-493.2)">
+			<title>c0_0_2</title>
+			<desc>91.32%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>91.32%</text>		</g>
+		<g id="shape10-28" v:mID="10" v:groupContext="shape" transform="translate(21.6,-437.04)">
+			<title>r0_1</title>
+			<desc>Base+A</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="73.6" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base+A</text>		</g>
+		<g id="shape11-31" v:mID="11" v:groupContext="shape" transform="translate(237.6,-437.04)">
+			<title>c0_1_0</title>
+			<desc>80.41%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>80.41%</text>		</g>
+		<g id="shape12-34" v:mID="12" v:groupContext="shape" transform="translate(345.6,-437.04)">
+			<title>c0_1_1</title>
+			<desc>87.92%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>87.92%</text>		</g>
+		<g id="shape13-37" v:mID="13" v:groupContext="shape" transform="translate(453.6,-437.04)">
+			<title>c0_1_2</title>
+			<desc>91.43%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>91.43%</text>		</g>
+		<g id="shape14-40" v:mID="14" v:groupContext="shape" transform="translate(21.6,-380.88)">
+			<title>r0_2</title>
+			<desc>Base+B</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="74.15" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base+B</text>		</g>
+		<g id="shape15-43" v:mID="15" v:groupContext="shape" transform="translate(237.6,-380.88)">
+			<title>c0_2_0</title>
+			<desc>81.86%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>81.86%</text>		</g>
+		<g id="shape16-46" v:mID="16" v:groupContext="shape" transform="translate(345.6,-380.88)">
+			<title>c0_2_1</title>
+			<desc>89.62%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>89.62%</text>		</g>
+		<g id="shape17-49" v:mID="17" v:groupContext="shape" transform="translate(453.6,-380.88)">
+			<title>c0_2_2</title>
+			<desc>93.21%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>93.21%</text>		</g>
+		<g id="shape18-52" v:mID="18" v:groupContext="shape" transform="translate(21.6,-324.72)">
+			<title>r0_3</title>
+			<desc>Base+C</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="74.23" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base+C</text>		</g>
+		<g id="shape19-55" v:mID="19" v:groupContext="shape" transform="translate(237.6,-324.72)">
+			<title>c0_3_0</title>
+			<desc>80.30%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>80.30%</text>		</g>
+		<g id="shape20-58" v:mID="20" v:groupContext="shape" transform="translate(345.6,-324.72)">
+			<title>c0_3_1</title>
+			<desc>87.87%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>87.87%</text>		</g>
+		<g id="shape21-61" v:mID="21" v:groupContext="shape" transform="translate(453.6,-324.72)">
+			<title>c0_3_2</title>
+			<desc>91.44%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>91.44%</text>		</g>
+		<g id="shape22-64" v:mID="22" v:groupContext="shape" transform="translate(21.6,-268.56)">
+			<title>r0_4</title>
+			<desc>Base+A+B</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="62.04" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base+A+B</text>		</g>
+		<g id="shape23-67" v:mID="23" v:groupContext="shape" transform="translate(237.6,-268.56)">
+			<title>c0_4_0</title>
+			<desc>81.82%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>81.82%</text>		</g>
+		<g id="shape24-70" v:mID="24" v:groupContext="shape" transform="translate(345.6,-268.56)">
+			<title>c0_4_1</title>
+			<desc>89.51%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>89.51%</text>		</g>
+		<g id="shape25-73" v:mID="25" v:groupContext="shape" transform="translate(453.6,-268.56)">
+			<title>c0_4_2</title>
+			<desc>93.18%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>93.18%</text>		</g>
+		<g id="shape26-76" v:mID="26" v:groupContext="shape" transform="translate(21.6,-212.4)">
+			<title>r0_5</title>
+			<desc>Base+A+C</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="62.12" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base+A+C</text>		</g>
+		<g id="shape27-79" v:mID="27" v:groupContext="shape" transform="translate(237.6,-212.4)">
+			<title>c0_5_0</title>
+			<desc>80.61%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>80.61%</text>		</g>
+		<g id="shape28-82" v:mID="28" v:groupContext="shape" transform="translate(345.6,-212.4)">
+			<title>c0_5_1</title>
+			<desc>87.98%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>87.98%</text>		</g>
+		<g id="shape29-85" v:mID="29" v:groupContext="shape" transform="translate(453.6,-212.4)">
+			<title>c0_5_2</title>
+			<desc>91.44%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>91.44%</text>		</g>
+		<g id="shape30-88" v:mID="30" v:groupContext="shape" transform="translate(21.6,-156.24)">
+			<title>r0_6</title>
+			<desc>Base+B+C</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="62.67" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base+B+C</text>		</g>
+		<g id="shape31-91" v:mID="31" v:groupContext="shape" transform="translate(237.6,-156.24)">
+			<title>c0_6_0</title>
+			<desc>81.47%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>81.47%</text>		</g>
+		<g id="shape32-94" v:mID="32" v:groupContext="shape" transform="translate(345.6,-156.24)">
+			<title>c0_6_1</title>
+			<desc>89.51%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>89.51%</text>		</g>
+		<g id="shape33-97" v:mID="33" v:groupContext="shape" transform="translate(453.6,-156.24)">
+			<title>c0_6_2</title>
+			<desc>93.22%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>93.22%</text>		</g>
+		<g id="shape34-100" v:mID="34" v:groupContext="shape" transform="translate(21.6,-100.08)">
+			<title>r0_7</title>
+			<desc>Base+A+B+C</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="50.56" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base+A+B+C</text>		</g>
+		<g id="shape35-103" v:mID="35" v:groupContext="shape" transform="translate(237.6,-100.08)">
+			<title>c0_7_0</title>
+			<desc>81.85%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>81.85%</text>		</g>
+		<g id="shape36-106" v:mID="36" v:groupContext="shape" transform="translate(345.6,-100.08)">
+			<title>c0_7_1</title>
+			<desc>89.49%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>89.49%</text>		</g>
+		<g id="shape37-109" v:mID="37" v:groupContext="shape" transform="translate(453.6,-100.08)">
+			<title>c0_7_2</title>
+			<desc>93.12%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>93.12%</text>		</g>
+		<g id="shape38-112" v:mID="38" v:groupContext="shape" transform="translate(597.6,-612)">
+			<title>s1</title>
+			<desc>View3</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="273.6" cy="705.6" width="547.2" height="28.8"/>
+			<rect x="0" y="691.2" width="547.2" height="28.8" class="st1"/>
+			<text x="241.46" y="711.9" class="st3" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>View3</text>		</g>
+		<g id="shape39-115" v:mID="39" v:groupContext="shape" transform="translate(813.6,-561.6)">
+			<title>h1_0</title>
+			<desc>Acc2</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="702" width="104.4" height="36"/>
+			<rect x="0" y="684" width="104.4" height="36" class="st1"/>
+			<text x="31.78" y="707.1" class="st4" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Acc2</text>		</g>
+		<g id="shape40-118" v:mID="40" v:groupContext="shape" transform="translate(921.6,-561.6)">
+			<title>h1_1</title>
+			<desc>Acc4</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="702" width="104.4" height="36"/>
+			<rect x="0" y="684" width="104.4" height="36" class="st1"/>
+			<text x="31.78" y="707.1" class="st4" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Acc4</text>		</g>
+		<g id="shape41-121" v:mID="41" v:groupContext="shape" transform="translate(1029.6,-561.6)">
+			<title>h1_2</title>
+			<desc>Acc8</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="702" width="104.4" height="36"/>
+			<rect x="0" y="684" width="104.4" height="36" class="st1"/>
+			<text x="31.78" y="707.1" class="st4" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Acc8</text>		</g>
+		<g id="shape42-124" v:mID="42" v:groupContext="shape" transform="translate(597.6,-493.2)">
+			<title>r1_0</title>
+			<desc>Base</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="85.7" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base</text>		</g>
+		<g id="shape43-127" v:mID="43" v:groupContext="shape" transform="translate(813.6,-493.2)">
+			<title>c1_0_0</title>
+			<desc>77.55%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>77.55%</text>		</g>
+		<g id="shape44-130" v:mID="44" v:groupContext="shape" transform="translate(921.6,-493.2)">
+			<title>c1_0_1</title>
+			<desc>86.38%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>86.38%</text>		</g>
+		<g id="shape45-133" v:mID="45" v:groupContext="shape" transform="translate(1029.6,-493.2)">
+			<title>c1_0_2</title>
+			<desc>90.50%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>90.50%</text>		</g>
+		<g id="shape46-136" v:mID="46" v:groupContext="shape" transform="translate(597.6,-437.04)">
+			<title>r1_1</title>
+			<desc>Base+A</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="73.6" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base+A</text>		</g>
+		<g id="shape47-139" v:mID="47" v:groupContext="shape" transform="translate(813.6,-437.04)">
+			<title>c1_1_0</title>
+			<desc>78.10%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>78.10%</text>		</g>
+		<g id="shape48-142" v:mID="48" v:groupContext="shape" transform="translate(921.6,-437.04)">
+			<title>c1_1_1</title>
+			<desc>86.56%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>86.56%</text>		</g>
+		<g id="shape49-145" v:mID="49" v:groupContext="shape" transform="translate(1029.6,-437.04)">
+			<title>c1_1_2</title>
+			<desc>90.61%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>90.61%</text>		</g>
+		<g id="shape50-148" v:mID="50" v:groupContext="shape" transform="translate(597.6,-380.88)">
+			<title>r1_2</title>
+			<desc>Base+B</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="74.15" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base+B</text>		</g>
+		<g id="shape51-151" v:mID="51" v:groupContext="shape" transform="translate(813.6,-380.88)">
+			<title>c1_2_0</title>
+			<desc>78.37%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>78.37%</text>		</g>
+		<g id="shape52-154" v:mID="52" v:groupContext="shape" transform="translate(921.6,-380.88)">
+			<title>c1_2_1</title>
+			<desc>87.67%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>87.67%</text>		</g>
+		<g id="shape53-157" v:mID="53" v:groupContext="shape" transform="translate(1029.6,-380.88)">
+			<title>c1_2_2</title>
+			<desc>92.07%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>92.07%</text>		</g>
+		<g id="shape54-160" v:mID="54" v:groupContext="shape" transform="translate(597.6,-324.72)">
+			<title>r1_3</title>
+			<desc>Base+C</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="74.23" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base+C</text>		</g>
+		<g id="shape55-163" v:mID="55" v:groupContext="shape" transform="translate(813.6,-324.72)">
+			<title>c1_3_0</title>
+			<desc>77.46%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>77.46%</text>		</g>
+		<g id="shape56-166" v:mID="56" v:groupContext="shape" transform="translate(921.6,-324.72)">
+			<title>c1_3_1</title>
+			<desc>86.48%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>86.48%</text>		</g>
+		<g id="shape57-169" v:mID="57" v:groupContext="shape" transform="translate(1029.6,-324.72)">
+			<title>c1_3_2</title>
+			<desc>90.62%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>90.62%</text>		</g>
+		<g id="shape58-172" v:mID="58" v:groupContext="shape" transform="translate(597.6,-268.56)">
+			<title>r1_4</title>
+			<desc>Base+A+B</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="62.04" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base+A+B</text>		</g>
+		<g id="shape59-175" v:mID="59" v:groupContext="shape" transform="translate(813.6,-268.56)">
+			<title>c1_4_0</title>
+			<desc>79.34%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>79.34%</text>		</g>
+		<g id="shape60-178" v:mID="60" v:groupContext="shape" transform="translate(921.6,-268.56)">
+			<title>c1_4_1</title>
+			<desc>88.06%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>88.06%</text>		</g>
+		<g id="shape61-181" v:mID="61" v:groupContext="shape" transform="translate(1029.6,-268.56)">
+			<title>c1_4_2</title>
+			<desc>92.24%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>92.24%</text>		</g>
+		<g id="shape62-184" v:mID="62" v:groupContext="shape" transform="translate(597.6,-212.4)">
+			<title>r1_5</title>
+			<desc>Base+A+C</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="62.12" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base+A+C</text>		</g>
+		<g id="shape63-187" v:mID="63" v:groupContext="shape" transform="translate(813.6,-212.4)">
+			<title>c1_5_0</title>
+			<desc>77.38%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>77.38%</text>		</g>
+		<g id="shape64-190" v:mID="64" v:groupContext="shape" transform="translate(921.6,-212.4)">
+			<title>c1_5_1</title>
+			<desc>86.32%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>86.32%</text>		</g>
+		<g id="shape65-193" v:mID="65" v:groupContext="shape" transform="translate(1029.6,-212.4)">
+			<title>c1_5_2</title>
+			<desc>90.61%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>90.61%</text>		</g>
+		<g id="shape66-196" v:mID="66" v:groupContext="shape" transform="translate(597.6,-156.24)">
+			<title>r1_6</title>
+			<desc>Base+B+C</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="62.67" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base+B+C</text>		</g>
+		<g id="shape67-199" v:mID="67" v:groupContext="shape" transform="translate(813.6,-156.24)">
+			<title>c1_6_0</title>
+			<desc>78.61%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>78.61%</text>		</g>
+		<g id="shape68-202" v:mID="68" v:groupContext="shape" transform="translate(921.6,-156.24)">
+			<title>c1_6_1</title>
+			<desc>87.74%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>87.74%</text>		</g>
+		<g id="shape69-205" v:mID="69" v:groupContext="shape" transform="translate(1029.6,-156.24)">
+			<title>c1_6_2</title>
+			<desc>92.27%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>92.27%</text>		</g>
+		<g id="shape70-208" v:mID="70" v:groupContext="shape" transform="translate(597.6,-100.08)">
+			<title>r1_7</title>
+			<desc>Base+A+B+C</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="104.4" cy="698.4" width="208.8" height="43.2"/>
+			<rect x="0" y="676.8" width="208.8" height="43.2" class="st1"/>
+			<text x="50.56" y="703.2" class="st5" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Base+A+B+C</text>		</g>
+		<g id="shape71-211" v:mID="71" v:groupContext="shape" transform="translate(813.6,-100.08)">
+			<title>c1_7_0</title>
+			<desc>79.41%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>79.41%</text>		</g>
+		<g id="shape72-214" v:mID="72" v:groupContext="shape" transform="translate(921.6,-100.08)">
+			<title>c1_7_1</title>
+			<desc>88.27%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>88.27%</text>		</g>
+		<g id="shape73-217" v:mID="73" v:groupContext="shape" transform="translate(1029.6,-100.08)">
+			<title>c1_7_2</title>
+			<desc>92.35%</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="52.2" cy="698.4" width="104.4" height="43.2"/>
+			<rect x="0" y="676.8" width="104.4" height="43.2" class="st6"/>
+			<text x="24.39" y="703.2" class="st7" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>92.35%</text>		</g>
+		<g id="shape74-220" v:mID="74" v:groupContext="shape" transform="translate(28.8,-28.8)">
+			<title>unit</title>
+			<desc>Acc2/4/8 分别为误差严格小于 2/4/8 mm 的有效像素比例。</desc>
+			<v:textBlock v:margins="rect(2.88,5.4,2.88,5.4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="547.2" cy="702" width="1094.4" height="36"/>
+			<rect x="0" y="684" width="1094.4" height="36" class="st1"/>
+			<text x="344.76" y="706.94" class="st8" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Acc2/4/8 <tspan
+						class="st9">分别为误差严格小于</tspan> 2/4/8 mm <tspan class="st9">的有效像素比例</tspan><tspan class="st9">。</tspan></text>		</g>
+	</g>
+</svg>
