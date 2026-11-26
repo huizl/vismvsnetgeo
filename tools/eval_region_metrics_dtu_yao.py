@@ -56,6 +56,8 @@ def parse_args():
                         help='JSON selected scan/view/light keys; limits evaluation to these samples.')
     parser.add_argument('--paper_stage3_window', choices=('matched_fixed', 'bounded_kappa_sigma'))
     parser.add_argument('--paper_stage3_half_width', type=float)
+    parser.add_argument('--paper_stage3_residual', choices=('on', 'off'),
+                        help='Paired paper inference: retain or zero only the stage-three fusion residual.')
 
     parser.add_argument("--vismode", default="soft",
                         choices=["soft", "hard", "average", "uwta", "maxpool"])
@@ -116,7 +118,7 @@ def build_model(args):
         hypothesis_residual_scales=(
             args.hypothesis_residual_scale,
             args.hypothesis_residual_scale,
-            args.hypothesis_residual_scale,
+            0.0 if getattr(args, 'paper_stage3_residual', None) == 'off' else args.hypothesis_residual_scale,
         ),
     )
 
@@ -445,6 +447,10 @@ def main():
         raise ValueError('paper fusion diagnostics currently require --vismode soft')
     if args.paper_stage3_window and not args.paper_dumpdir:
         raise ValueError('stage-three window intervention requires --paper_dumpdir')
+    if args.paper_stage3_residual and (not args.paper_dumpdir or not variant.hypothesis_fusion
+                                     or args.paper_stage3_window or args.hypothesis_residual_scale <= 0):
+        raise ValueError('residual intervention requires a fusion checkpoint, positive scale, '
+                         'paper export and unchanged search windows')
     if args.paper_stage3_window == 'matched_fixed' and (
             args.paper_stage3_half_width is None or not np.isfinite(args.paper_stage3_half_width)
             or args.paper_stage3_half_width <= 0):
@@ -454,8 +460,8 @@ def main():
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
-    cudnn.benchmark = args.paper_stage3_window is None
-    if args.paper_stage3_window:
+    cudnn.benchmark = not (args.paper_stage3_window or args.paper_stage3_residual)
+    if not cudnn.benchmark:
         cudnn.deterministic = True
 
     dataset_class = find_dataset_def("dtu_yao")

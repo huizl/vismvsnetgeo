@@ -80,14 +80,17 @@ def dump_sample(args, sample, batch_item, outputs, depth_gt, depth_est,
         arrays[f'stage{i}_nearest_candidate_abs_mm'] = resize_tensor(
             (nearest_depth - gt_small).abs(), (h, w), mode='nearest')
         logits_gt, logits_probe, predictions = [], [], []
+        residual_scale = args.hypothesis_residual_scale
+        if i == 3 and getattr(args, 'paper_stage3_residual', None) == 'off':
+            residual_scale = 0.0
         for pair in pairs:
             u = pair[1][batch_item, 0]
             q = torch.sigmoid(pair[2][batch_item, 0])
             predictions.append(resize_tensor(q, (h, w)))
             if len(pair) == 4:
                 z = pair[3][batch_item, 0]
-                residual_gt = args.hypothesis_residual_scale * torch.tanh(z.gather(0, nearest[None])[0])
-                residual_probe = args.hypothesis_residual_scale * torch.tanh(z[:, gy, gx])
+                residual_gt = residual_scale * torch.tanh(z.gather(0, nearest[None])[0])
+                residual_probe = residual_scale * torch.tanh(z[:, gy, gx])
             else:
                 residual_gt = torch.zeros_like(u)
                 residual_probe = torch.zeros(hyp.shape[0], device=u.device)
