@@ -456,7 +456,8 @@ class VisMVSModel(nn.Module):
             range_min.unsqueeze(1) +
             (range_max - range_min).unsqueeze(1) * position)
 
-    def forward(self, imgs, proj_matrices, depth_values_orig, return_range_inputs=False):
+    def forward(self, imgs, proj_matrices, depth_values_orig, return_range_inputs=False,
+                stage3_window=None, stage3_half_width=None):
         """
         Args:
             imgs:               [B, V, 3, H, W]
@@ -566,7 +567,20 @@ class VisMVSModel(nn.Module):
             mode='bilinear', align_corners=False).squeeze(1)
 
         s3_interval = base_interval * self.s3_iscale
-        if self.adaptive_range:
+        if stage3_window is not None:
+            if stage3_window == 'matched_fixed':
+                half_width = stage3_half_width
+            else:
+                nominal = (self.s3_dnum // 2) * s3_interval.view(B, 1, 1)
+                half_width = torch.clamp(self.range_sigma_scale * std_2_up,
+                                         min=self.range_min_scale * nominal,
+                                         max=self.range_max_scale * nominal)
+            lower, upper = base_start.view(B, 1, 1), global_max.view(B, 1, 1)
+            start = torch.clamp(depth_2_up - half_width, min=lower, max=upper)
+            end = torch.clamp(depth_2_up + half_width, min=lower, max=upper)
+            position = torch.linspace(0, 1, self.s3_dnum, device=device, dtype=dtype)
+            depth_values_3 = start[:, None] + (end - start)[:, None] * position.view(1, -1, 1, 1)
+        elif self.adaptive_range:
             depth_values_3 = self._build_adaptive_depth_range(
                 depth_2_up, std_2_up, self.s3_dnum, s3_interval,
                 base_start, global_max)

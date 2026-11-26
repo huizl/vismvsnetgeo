@@ -54,6 +54,8 @@ def parse_args():
                         help='Optional actual prediction export, grouped by analysis configuration.')
     parser.add_argument('--paper_sample_keys', default=None,
                         help='JSON selected scan/view/light keys; limits evaluation to these samples.')
+    parser.add_argument('--paper_stage3_window', choices=('matched_fixed', 'bounded_kappa_sigma'))
+    parser.add_argument('--paper_stage3_half_width', type=float)
 
     parser.add_argument("--vismode", default="soft",
                         choices=["soft", "hard", "average", "uwta", "maxpool"])
@@ -441,12 +443,20 @@ def main():
         raise ValueError("factor C currently requires --vismode soft")
     if args.paper_dumpdir and args.vismode != 'soft':
         raise ValueError('paper fusion diagnostics currently require --vismode soft')
+    if args.paper_stage3_window and not args.paper_dumpdir:
+        raise ValueError('stage-three window intervention requires --paper_dumpdir')
+    if args.paper_stage3_window == 'matched_fixed' and (
+            args.paper_stage3_half_width is None or not np.isfinite(args.paper_stage3_half_width)
+            or args.paper_stage3_half_width <= 0):
+        raise ValueError('matched_fixed requires a finite, positive --paper_stage3_half_width')
     if args.light != -1 and not 0 <= args.light <= 6:
         raise ValueError("--light must be -1 or in [0,6]")
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
-    cudnn.benchmark = True
+    cudnn.benchmark = args.paper_stage3_window is None
+    if args.paper_stage3_window:
+        cudnn.deterministic = True
 
     dataset_class = find_dataset_def("dtu_yao")
     dataset = dataset_class(
@@ -506,7 +516,8 @@ def main():
             sample_cuda = to_cuda(sample)
             outputs, _, confidence_maps = model(
                 sample_cuda["imgs"], sample_cuda["proj_matrices"],
-                sample_cuda["depth_values"], return_range_inputs=bool(args.paper_dumpdir))
+                sample_cuda["depth_values"], return_range_inputs=bool(args.paper_dumpdir),
+                stage3_window=args.paper_stage3_window, stage3_half_width=args.paper_stage3_half_width)
             depth_gt_tensor = sample_cuda["depth"]
             depth_est_full = F.interpolate(
                 outputs[-1][0].unsqueeze(1), size=depth_gt_tensor.shape[-2:],
