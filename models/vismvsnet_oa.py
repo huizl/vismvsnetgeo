@@ -659,6 +659,12 @@ class VisMVSLoss(nn.Module):
             return values.sum() * 0.0
         return values[valid].mean()
 
+    @staticmethod
+    def _pair_uncertainty_nll(pair_error, uncertainty, visible=None):
+        if visible is not None:
+            pair_error = torch.where(visible, pair_error, pair_error.detach())
+        return pair_error * (-uncertainty).exp() + uncertainty
+
     def _balanced_focal_bce(self, logits, target, supervised):
         supervised = supervised.bool()
         if not supervised.any():
@@ -818,13 +824,9 @@ class VisMVSLoss(nn.Module):
                 if self.occlusion_aware_supervision:
                     pair_l1_losses.append(
                         self._masked_mean(pair_error, visible))
-                    # Visible errors train both depth and uncertainty. Occluded
-                    # errors train uncertainty only, because no match exists.
-                    uncertainty_error = torch.where(
-                        visible, pair_error, pair_error.detach())
-                    uncertainty_nll = (
-                        uncertainty_error * (-uncertainty).exp() + uncertainty
-                    )
+                    # Mask the direct error gradient for occluded pairs. The
+                    # uncertainty output still depends on matching entropy.
+                    uncertainty_nll = self._pair_uncertainty_nll(pair_error, uncertainty, visible)
                     uncertainty_losses.append(
                         self._masked_mean(uncertainty_nll, supervised))
                     visibility_losses.append(self._balanced_focal_bce(
@@ -832,9 +834,7 @@ class VisMVSLoss(nn.Module):
                 else:
                     pair_l1_losses.append(
                         self._masked_mean(pair_error, valid))
-                    uncertainty_nll = (
-                        pair_error * (-uncertainty).exp() + uncertainty
-                    )
+                    uncertainty_nll = self._pair_uncertainty_nll(pair_error, uncertainty)
                     uncertainty_losses.append(
                         self._masked_mean(uncertainty_nll, valid))
 
