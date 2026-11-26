@@ -69,6 +69,9 @@ def dump_sample(args, sample, batch_item, outputs, depth_gt, depth_est,
         gt_small = torch.as_tensor(cv2.resize(depth_gt, (sw, sh), interpolation=cv2.INTER_NEAREST),
                                    device=hyp.device)
         nearest = (hyp - gt_small[None]).abs().argmin(dim=0)
+        nearest_depth = hyp.gather(0, nearest[None])[0]
+        arrays[f'stage{i}_nearest_candidate_abs_mm'] = resize_tensor(
+            (nearest_depth - gt_small).abs(), (h, w), mode='nearest')
         logits_gt, logits_probe, predictions = [], [], []
         for pair in pairs:
             u = pair[1][batch_item, 0]

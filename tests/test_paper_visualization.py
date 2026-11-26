@@ -288,7 +288,7 @@ class PaperVisualizationTest(unittest.TestCase):
             root=Path(temporary)
             image_dir=root/'data'/'Rectified'/'scan1_train'; image_dir.mkdir(parents=True)
             Image.new('RGB',(2,2),'white').save(image_dir/'rect_001_3_r5000.png')
-            args=SimpleNamespace(model_type='oa_hyp',paper_dumpdir=str(root/'out'),
+            args=SimpleNamespace(model_type='hyp',paper_dumpdir=str(root/'out'),
                 testpath=str(root/'data'),loadckpt='checkpoint.ckpt',eval_nviews=3,
                 region_nviews=3,occ_abs_tol=2.,occ_rel_tol=.01,hypothesis_residual_scale=1.,light=3,
                 _paper_selections=[{'scan':'scan1','view':0,'light':3,'probe':[0,0]}])
@@ -312,7 +312,7 @@ class PaperVisualizationTest(unittest.TestCase):
             self.assertTrue((folder/'arrays.npz').is_file())
             metadata=json.loads((folder/'metadata.json').read_text(encoding='utf-8'))
             self.assertEqual(metadata['analysis_code'],'111')
-            self.assertEqual(metadata['raw_csv_code'],'101')
+            self.assertEqual(metadata['raw_csv_code'],'001')
             expected=torch.softmax(torch.tensor([0.,-1.+np.tanh(.5)]),dim=0).numpy()
             with np.load(folder/'arrays.npz') as arr:
                 np.testing.assert_allclose(arr['stage3_probe_weights'][:,0],expected,atol=1e-6)

@@ -1,6 +1,7 @@
 """Paper display names; preserve checkpoint/CSV identity separately.
 
-This is a presentation mapping requested by the author, not model switches.
+Display names follow tables 1–4 of the supplied Word manuscript. The paper
+codes are row labels and do not encode the experimental factor settings.
 Never use analysis_code to construct a network or change checkpoint tensors.
 """
 from dataclasses import dataclass
@@ -21,8 +22,8 @@ CONFIGS = (
     PaperConfig('range_hyp', 'Base+C', '001', '011'),
     PaperConfig('oa', 'Base+A+B', '110', '100'),
     PaperConfig('oa_full', 'Base+A+C', '101', '111'),
-    PaperConfig('hyp', 'Base+B+C', '011', '001'),
-    PaperConfig('oa_hyp', 'Base+A+B+C', '111', '101'),
+    PaperConfig('oa_hyp', 'Base+B+C', '011', '101'),
+    PaperConfig('hyp', 'Base+A+B+C', '111', '001'),
 )
 BY_MODEL = {c.model_type: c for c in CONFIGS}
 BY_NAME = {c.name: c for c in CONFIGS}

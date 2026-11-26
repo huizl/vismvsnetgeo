@@ -18,8 +18,6 @@ from tools.blendedmvs_metrics import (
     METRICS, PERCENT_METRICS, REGIONS, aggregate, describe_scene,
     geometry_maps, region_metrics, select_examples,
 )
-from tools.paper_configs import BY_NAME
-
 NAMES = ("Base", "Base+A+B+C")
 
 
@@ -59,8 +57,9 @@ def parse_args(argv=None):
     p.add_argument("--checkpoint_name", default="best_2mm.ckpt")
     p.add_argument("--base_checkpoint")
     p.add_argument("--full_checkpoint")
-    p.add_argument("--base_model_type", default=BY_NAME[NAMES[0]].model_type)
-    p.add_argument("--full_model_type", default=BY_NAME[NAMES[1]].model_type)
+    # Preserve the historical evaluation pair independently of paper row labels.
+    p.add_argument("--base_model_type", default="range")
+    p.add_argument("--full_model_type", default="oa_hyp")
     p.add_argument("--outdir", default="outputs/cross_dataset/BlendedMVS")
     p.add_argument("--check_only", action="store_true", help="Check data without torch/GPU/checkpoints")
     p.add_argument("--check_samples", type=int, default=3)

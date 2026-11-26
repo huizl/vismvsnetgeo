@@ -10,7 +10,6 @@ select: choose three difficulty categories using full-test-set GT geometry.
 from __future__ import annotations
 
 import argparse
-import csv
 import json
 import os
 from pathlib import Path
@@ -28,41 +27,20 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from tools.paper_configs import CONFIGS, BY_NAME, validate_csv_identity
+from tools.paper_tables import (
+    METRICS, REGIONS, SERIES, load_series, manuscript_accuracy, read_csv, sample_key, write_csv,
+)
 
-SERIES = {'View5': 'ablation_test_light3', 'View3': 'ablation_test_view3_light3'}
-REGIONS = ('full', 'boundary', 'large_disparity', 'occluded_any',
-           'occluded_majority', 'large_disp_and_occluded', 'boundary_and_occluded')
 LABELS = ('All', 'Boundary', 'Large disparity', 'Any occlusion',
           'Majority occlusion', 'Disparity + occlusion', 'Boundary + occlusion')
-METRICS = ('abs', 'acc2', 'acc4', 'acc8', 'stage1_in_range', 'stage2_in_range',
-           'stage3_in_range', 'stage1_range_width', 'stage2_range_width', 'stage3_range_width')
 PERCENT = {'acc2', 'acc4', 'acc8', 'stage1_in_range', 'stage2_in_range', 'stage3_in_range'}
-PAIRS = (('Base', 'Base+A', 'A'), ('Base+B', 'Base+A+B', 'A'),
-         ('Base+C', 'Base+A+C', 'A'), ('Base+B+C', 'Base+A+B+C', 'A'),
-         ('Base', 'Base+B', 'B'), ('Base+A', 'Base+A+B', 'B'),
-         ('Base+C', 'Base+B+C', 'B'), ('Base+A+C', 'Base+A+B+C', 'B'),
-         ('Base', 'Base+C', 'C'), ('Base+A', 'Base+A+C', 'C'),
-         ('Base+B', 'Base+B+C', 'C'), ('Base+A+B', 'Base+A+B+C', 'C'))
-
-
-def read_csv(path):
-    with Path(path).open(encoding='utf-8-sig', newline='') as handle:
-        return list(csv.DictReader(handle))
-
-
-def write_csv(path, rows):
-    if not rows:
-        return
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open('w', encoding='utf-8-sig', newline='') as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
-        writer.writeheader()
-        writer.writerows(rows)
-
-
-def sample_key(row):
-    return row['scan'], int(row['view']), int(row['light'])
+BY_CSV_CODE = {config.csv_code: config for config in CONFIGS}
+PAIRS = tuple(
+    (config.name, BY_CSV_CODE[code[:i] + '1' + code[i+1:]].name, factor)
+    for i, factor in enumerate('ABC')
+    for code, config in BY_CSV_CODE.items()
+    if code[i] == '0'
+)
 
 
 def sample_id(key):
@@ -78,65 +56,26 @@ def save_figure(fig, path):
     plt.close(fig)
 
 
-def load_series(eval_root, series):
-    folder = Path(eval_root) / SERIES[series]
-    per_image, summaries = {}, {}
-    for config in CONFIGS:
-        matches = []
-        for path in folder.glob('*/summary_metrics.csv'):
-            rows = read_csv(path)
-            if rows and rows[0]['model_type'] == config.model_type:
-                matches.append((path, rows))
-        if len(matches) != 1:
-            raise ValueError(f'{series}/{config.name}: expected one result source, found {len(matches)}')
-        path, summary = matches[0]
-        for row in summary:
-            validate_csv_identity(row, config)
-        summaries[config.name] = {r['region']: r for r in summary if r['aggregation'] == 'pixel_weighted'}
-        if set(summaries[config.name]) != set(REGIONS):
-            raise ValueError(f'{config.name}: incomplete regions')
-        rows = read_csv(path.parent / 'all_metrics.csv')
-        indexed = {}
-        for row in rows:
-            validate_csv_identity(row, config)
-            key = (*sample_key(row), row['region'])
-            if key in indexed:
-                raise ValueError(f'Duplicate CSV sample: {key}')
-            indexed[key] = row
-        per_image[config.name] = indexed
-        # Prove that sample plots and global tables use the same population.
-        for region in REGIONS:
-            rr = [r for r in rows if r['region'] == region]
-            total = sum(int(r['pixels']) for r in rr)
-            sr = summaries[config.name][region]
-            if total != int(sr['pixels']) or len(rr) != int(sr['images']):
-                raise ValueError(f'{config.name}/{region}: sample population differs from summary')
-            for metric in METRICS:
-                weighted = sum(float(r[metric])*int(r['pixels']) for r in rr)/total
-                if not np.isclose(weighted, float(sr[metric]), atol=1e-5, rtol=1e-6):
-                    raise ValueError(f'{config.name}/{region}/{metric}: summary mismatch')
-    baseline = per_image['Base']
-    for name, indexed in per_image.items():
-        if set(indexed) != set(baseline):
-            raise ValueError(f'{name}: unequal sample/region keys')
-        for key, row in indexed.items():
-            if int(row['pixels']) != int(baseline[key]['pixels']):
-                raise ValueError(f'{name}: unequal region mask pixel population {key}')
-    return per_image, summaries
-
-
 def stat_figures(args, series):
     per_image, summary = load_series(args.eval_root, series)
     folder = Path(args.outdir) / series
     names = [c.name for c in CONFIGS]
     display_rows = []
     for config in CONFIGS:
+        accuracy = manuscript_accuracy(series, config.name)
+        if accuracy:
+            summary[config.name]['full'] = {
+                **summary[config.name]['full'],
+                **{metric: float(value.rstrip('%')) / 100 for metric, value in accuracy.items()},
+            }
         for region in REGIONS:
             row = summary[config.name][region]
             base = float(summary['Base'][region]['abs'])
             display_rows.append({'analysis_config': config.name, 'analysis_code': config.analysis_code,
                                  'raw_model_type': config.model_type, 'raw_csv_code': config.csv_code,
                                  'region': region, 'pixels': row['pixels'], 'images': row['images'],
+                                 'accuracy_source': 'manuscript_table_4' if accuracy and region == 'full'
+                                 else 'evaluation_csv',
                                  **{m: float(row[m]) for m in METRICS},
                                  'abs_reduction_pct': 100*(base-float(row['abs']))/base,
                                  **{m+'_delta_pp': 100*(float(row[m])-float(summary['Base'][region][m])) for m in PERCENT}})
@@ -432,6 +371,11 @@ def render_sample(args, series, key, files):
     for name in names:
         if metadata[name]['analysis_config'] != name:
             raise ValueError('Folder and analysis name differ')
+        validate_csv_identity(
+            {'model_type': metadata[name]['raw_model_type'],
+             'ablation_code': metadata[name]['raw_csv_code']},
+            BY_NAME[name],
+        )
         for field in ('gt','rgb','valid',*('mask_'+r for r in REGIONS)):
             if not np.array_equal(reference[field], arrays[name][field]):
                 raise ValueError(f'{key}/{name}: unaligned input/GT/region masks ({field})')
