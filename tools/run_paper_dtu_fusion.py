@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from paper_tables import ROOT, SERIES, load_series, write_csv
+from paper_tables import ROOT, SERIES, load_series, read_csv, write_csv
 from tools.paper_configs import BY_NAME
 
 
@@ -178,16 +178,56 @@ def score_cloud(args, scan, ply_path):
     log.write_text(result.stdout + '\n' + result.stderr, encoding='utf-8')
     if result.returncode != 0:
         raise RuntimeError(f'DTU evaluator failed: {log}')
-    accuracy, completeness, overall = map(float, result.stdout.strip().splitlines()[-1].split())
+    try:
+        accuracy, completeness, overall = map(float, result.stdout.strip().splitlines()[-1].split())
+    except (ValueError, IndexError) as error:
+        raise ValueError(f'Could not read the three DTU metrics: {log}') from error
     if not all(math.isfinite(value) for value in (accuracy, completeness, overall)):
         raise ValueError(f'Nonfinite DTU metrics: {log}')
     return dict(accuracy_mm=accuracy, completeness_mm=completeness, overall_mm=overall)
 
 
+def score_existing_clouds(args, report):
+    protocol_path = report / 'protocol.json'
+    protocol = json.loads(protocol_path.read_text(encoding='utf-8'))
+    expected = dict(series=args.series, split=args.split, depth_unit='mm',
+                    pixel_threshold=args.pixel_threshold, relative_threshold=args.relative_threshold,
+                    min_consistent_source_views=args.min_consistent)
+    if any(protocol.get(name) != value for name, value in expected.items()):
+        raise ValueError(f'Cached fusion used a different protocol: {protocol_path}')
+    if not set(args.scans) <= set(protocol['scans']):
+        raise ValueError(f'Requested scans are missing from {protocol_path}')
+    rows = [row for row in read_csv(report / 'pointcloud_per_scan.csv') if row['scan'] in args.scans]
+    expected_pairs = {(name, scan) for name in NAMES for scan in args.scans}
+    if len(rows) != len(expected_pairs) or {(row['configuration'], row['scan']) for row in rows} != expected_pairs:
+        raise ValueError(f'Missing or duplicate cached point-cloud results: {report}')
+
+    paths = []
+    for row in rows:
+        config = protocol['configurations'][row['configuration']]
+        if (row['series'], row['raw_model_type'], row['raw_csv_code']) != (
+                args.series, config['model_type'], config['csv_code']):
+            raise ValueError('Cached fusion result does not match its recorded configuration')
+        ply = report / row['configuration'] / f"{row['scan']}.ply"
+        if not ply.is_file():
+            raise FileNotFoundError(ply)
+        paths.append(ply)
+
+    for row, ply in zip(rows, paths):
+        row.update(score_cloud(args, row['scan'], ply))
+        print(f"{row['configuration']} {row['scan']}: Overall {row['overall_mm']:.4f} mm", flush=True)
+    write_csv(report / 'pointcloud_scores.csv', rows)
+    score_protocol = dict(fusion_protocol=protocol, scans=args.scans, evaluator=str(args.evaluator),
+                          evaluator_sha256=sha256(args.evaluator.read_bytes()).hexdigest(),
+                          dtu_eval_root=str(args.dtu_eval_root))
+    (report / 'score_protocol.json').write_text(json.dumps(score_protocol, indent=2) + '\n', encoding='utf-8')
+    print(f'Point-cloud scores written to {report / "pointcloud_scores.csv"}')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('dtu_root', type=Path)
-    parser.add_argument('checkpoint_root', type=Path)
+    parser.add_argument('dtu_root', type=Path, nargs='?')
+    parser.add_argument('checkpoint_root', type=Path, nargs='?')
     parser.add_argument('--split', choices=('val', 'test'), default='val')
     parser.add_argument('--scans', nargs='+')
     parser.add_argument('--series', choices=tuple(SERIES), default='View5')
@@ -198,7 +238,9 @@ def main():
     parser.add_argument('--relative_threshold', type=float, default=0.01)
     parser.add_argument('--min_consistent', type=int, default=2)
     parser.add_argument('--num_workers', type=int, default=2)
-    parser.add_argument('--fusion_only', action='store_true', help='Reuse already exported depth maps')
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument('--fusion_only', action='store_true', help='Reuse already exported depth maps')
+    modes.add_argument('--score_only', action='store_true', help='Score existing PLYs without inference or fusion')
     args = parser.parse_args()
     args.scans = args.scans or PILOT_SCANS[args.split]
     allowed = (ROOT / 'lists/dtu' / f'{args.split}.txt').read_text().split()
@@ -206,6 +248,10 @@ def main():
         parser.error('scans must be unique members of the selected split')
     if bool(args.evaluator) != bool(args.dtu_eval_root):
         parser.error('provide both --evaluator and --dtu_eval_root to evaluate point clouds')
+    if args.score_only and not args.evaluator:
+        parser.error('--score_only requires --evaluator and --dtu_eval_root')
+    if not args.score_only and (args.dtu_root is None or args.checkpoint_root is None):
+        parser.error('dtu_root and checkpoint_root are required for depth export or fusion')
     if not all(math.isfinite(x) and x > 0 for x in (args.pixel_threshold, args.relative_threshold)):
         parser.error('thresholds must be finite and positive')
     if not 1 <= args.min_consistent <= 4:
@@ -224,6 +270,10 @@ def main():
             parser.error('missing evaluator or reference files: ' + ', '.join(missing))
 
     out = args.outdir.resolve() / args.series / args.split
+    report = out / f'px{args.pixel_threshold:g}_rel{args.relative_threshold:g}_min{args.min_consistent}'
+    if args.score_only:
+        score_existing_clouds(args, report)
+        return
     out.mkdir(parents=True, exist_ok=True)
     scanlist = out / 'scans.txt'
     scanlist.write_text('\n'.join(args.scans) + '\n', encoding='ascii')
@@ -238,7 +288,6 @@ def main():
                     min_consistent_source_views=args.min_consistent, configurations=protocols,
                     evaluator=str(args.evaluator) if args.evaluator else None,
                     evaluator_sha256=sha256(args.evaluator.read_bytes()).hexdigest() if args.evaluator else None)
-    report = out / f'px{args.pixel_threshold:g}_rel{args.relative_threshold:g}_min{args.min_consistent}'
     report.mkdir(exist_ok=True)
     (report / 'protocol.json').write_text(json.dumps(settings, indent=2) + '\n', encoding='utf-8')
     rows = []
