@@ -456,7 +456,7 @@ class VisMVSModel(nn.Module):
             range_min.unsqueeze(1) +
             (range_max - range_min).unsqueeze(1) * position)
 
-    def forward(self, imgs, proj_matrices, depth_values_orig):
+    def forward(self, imgs, proj_matrices, depth_values_orig, return_range_inputs=False):
         """
         Args:
             imgs:               [B, V, 3, H, W]
@@ -591,6 +591,9 @@ class VisMVSModel(nn.Module):
             [depth_2, pairs_2, depth_values_2],
             [depth_3, pairs_3, depth_values_3],
         ]
+        if return_range_inputs:
+            outputs[1].append((depth_1_up, std_1_up, s2_interval, base_start, global_max))
+            outputs[2].append((depth_2_up, std_2_up, s3_interval, base_start, global_max))
 
         return outputs, final_depth, [conf_1_up, conf_2_up, conf_3_up]
 

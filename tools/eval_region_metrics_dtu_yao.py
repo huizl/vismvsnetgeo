@@ -506,7 +506,7 @@ def main():
             sample_cuda = to_cuda(sample)
             outputs, _, confidence_maps = model(
                 sample_cuda["imgs"], sample_cuda["proj_matrices"],
-                sample_cuda["depth_values"])
+                sample_cuda["depth_values"], return_range_inputs=bool(args.paper_dumpdir))
             depth_gt_tensor = sample_cuda["depth"]
             depth_est_full = F.interpolate(
                 outputs[-1][0].unsqueeze(1), size=depth_gt_tensor.shape[-2:],

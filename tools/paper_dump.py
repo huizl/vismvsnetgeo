@@ -68,6 +68,13 @@ def dump_sample(args, sample, batch_item, outputs, depth_gt, depth_est,
         gx = min(sw-1, max(0, int((probe[0]+0.5)*sw/w)))
         gt_small = torch.as_tensor(cv2.resize(depth_gt, (sw, sh), interpolation=cv2.INTER_NEAREST),
                                    device=hyp.device)
+        if len(stage) == 4:
+            for key, tensor in zip(('center', 'std', 'interval', 'global_min', 'global_max'), stage[3]):
+                arrays[f'stage{i}_search_{key}'] = tensor[batch_item].detach().cpu().numpy()
+            arrays[f'stage{i}_search_gt'] = gt_small.cpu().numpy()
+            arrays[f'stage{i}_search_count'] = np.int32(hyp.shape[0])
+            arrays[f'stage{i}_search_actual_min'] = hyp[0].detach().cpu().numpy()
+            arrays[f'stage{i}_search_actual_max'] = hyp[-1].detach().cpu().numpy()
         nearest = (hyp - gt_small[None]).abs().argmin(dim=0)
         nearest_depth = hyp.gather(0, nearest[None])[0]
         arrays[f'stage{i}_nearest_candidate_abs_mm'] = resize_tensor(

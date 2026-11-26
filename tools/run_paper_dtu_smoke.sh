@@ -12,6 +12,7 @@ checkpoint_root="$2"
 python_bin="${PAPER_PYTHON:-python}"
 output="${PAPER_OUTPUT:-outputs/first_batch_existing_weights/dtu_smoke}"
 eval_args="${PAPER_EVAL_ARGS_JSON:-tools/paper_eval_args.example.json}"
+selection="${PAPER_SELECTION:-tools/paper_dtu_smoke_samples.json}"
 case "${3:-all}" in
   all) series=(View5 View3) ;;
   View5|View3) series=("$3") ;;
@@ -22,8 +23,9 @@ for split in "${series[@]}"; do
   "$python_bin" tools/visualize_paper_results.py export \
     --series "$split" --testpath "$dtu_root" --checkpoint_root "$checkpoint_root" \
     --configs Base 'Base+B' 'Base+A+B+C' \
-    --selection tools/paper_dtu_smoke_samples.json --eval_args_json "$eval_args" \
+    --selection "$selection" --eval_args_json "$eval_args" \
     --verify_mode warn --outdir "$output"
 done
 
+"$python_bin" tools/paper_search_windows.py "$output" --series "${series[@]}"
 echo "Inference arrays and per-configuration reproduction_status.json reports: $output"
