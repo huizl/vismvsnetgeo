@@ -1,0 +1,20 @@
+[
+  {"scan": "scan3", "view": 13, "light": 3},
+  {"scan": "scan5", "view": 13, "light": 3},
+  {"scan": "scan17", "view": 13, "light": 3},
+  {"scan": "scan21", "view": 13, "light": 3},
+  {"scan": "scan28", "view": 13, "light": 3},
+  {"scan": "scan35", "view": 13, "light": 3},
+  {"scan": "scan37", "view": 13, "light": 3},
+  {"scan": "scan38", "view": 13, "light": 3},
+  {"scan": "scan40", "view": 13, "light": 3},
+  {"scan": "scan43", "view": 13, "light": 3},
+  {"scan": "scan56", "view": 13, "light": 3},
+  {"scan": "scan59", "view": 13, "light": 3},
+  {"scan": "scan66", "view": 13, "light": 3},
+  {"scan": "scan67", "view": 13, "light": 3},
+  {"scan": "scan82", "view": 13, "light": 3},
+  {"scan": "scan86", "view": 13, "light": 3},
+  {"scan": "scan106", "view": 13, "light": 3},
+  {"scan": "scan117", "view": 13, "light": 3}
+]

@@ -15,6 +15,7 @@ if str(ROOT) not in sys.path:
 from tools.paper_configs import BY_NAME, CONFIGS, validate_csv_identity
 
 SERIES = {'View5': 'ablation_test_light3', 'View3': 'ablation_test_view3_light3'}
+VALIDATION_SERIES = {'View5': 'ablation_val_light3', 'View3': 'ablation_val_view3_light3'}
 REGIONS = ('full', 'boundary', 'large_disparity', 'occluded_any',
            'occluded_majority', 'large_disp_and_occluded', 'boundary_and_occluded')
 METRICS = ('abs', 'acc2', 'acc4', 'acc8', 'stage1_in_range', 'stage2_in_range',
@@ -53,8 +54,8 @@ def sample_key(row):
     return row['scan'], int(row['view']), int(row['light'])
 
 
-def load_series(eval_root, series):
-    folder = Path(eval_root) / SERIES[series]
+def load_series(eval_root, series, *, validation=False):
+    folder = Path(eval_root) / (VALIDATION_SERIES if validation else SERIES)[series]
     sources = {}
     for path in folder.glob('*/summary_metrics.csv'):
         rows = read_csv(path)

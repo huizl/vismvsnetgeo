@@ -197,7 +197,7 @@ def export(args):
         raise ValueError('One export must use a single light, matching the original CSV protocol')
     overrides = json.loads(Path(args.eval_args_json).read_text()) if args.eval_args_json else {}
     manifest = json.loads(Path(args.checkpoint_manifest).read_text()) if args.checkpoint_manifest else {}
-    _, summaries = load_series(args.eval_root, series)
+    _, summaries = load_series(args.eval_root, series, validation=getattr(args, 'validation', False))
     configs = [BY_NAME[n] for n in args.configs] if args.configs else CONFIGS
     for config in configs:
         source = summaries[config.name]['full']
@@ -236,7 +236,7 @@ def export(args):
 
 def verify_export(args, series, config, folder):
     folder = Path(folder)
-    original, _ = load_series(args.eval_root, series)
+    original, _ = load_series(args.eval_root, series, validation=getattr(args, 'validation', False))
     exported = read_csv(folder/'all_metrics.csv')
     if not exported:
         raise RuntimeError('Export produced no metrics')
@@ -606,7 +606,10 @@ def main():
     parser.add_argument('--checkpoint_root',help='Relocate CSV checkpoint folder under this root')
     parser.add_argument('--checkpoint_manifest',help='JSON keyed by Base, Base+A, ..., paths to actual checkpoints')
     parser.add_argument('--eval_args_json',help='Explicit evaluator parameters used in original CSV run')
-    parser.add_argument('--testpath'); parser.add_argument('--testlist',default=str(ROOT/'lists'/'dtu'/'test.txt'))
+    parser.add_argument('--testpath')
+    parser.add_argument('--testlist')
+    parser.add_argument('--validation', action='store_true',
+                        help='export/verify against the historical validation CSVs')
     parser.add_argument('--configs',nargs='+',choices=list(BY_NAME))
     parser.add_argument('--layout',choices=['paper','ablation'],default='paper',
                         help='render: Base/ABC full-scene overview and separate panels (default), or legacy ablation figures')
@@ -620,6 +623,11 @@ def main():
     parser.add_argument('--overlay_alpha',type=float,default=.70,help='GT difficulty overlay opacity; solid inner outlines remain visible')
     parser.add_argument('--cdf_max',type=float,default=30); parser.add_argument('--allow_partial',action='store_true')
     args=parser.parse_args()
+    if args.validation and args.command not in ('export', 'verify'):
+        parser.error('--validation applies only to export and verify')
+    if args.testlist is None:
+        split_name = 'val' if args.validation else 'test'
+        args.testlist = str(ROOT/'lists'/'dtu'/f'{split_name}.txt')
     if args.command=='export' and (not args.testpath or args.series=='all'):
         parser.error('export requires --testpath and one explicit --series View5 or View3')
     if args.command=='select' and not args.testpath: parser.error('select requires --testpath for fixed GT geometry')
